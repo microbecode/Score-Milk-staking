@@ -6,7 +6,7 @@ contract Staking {
     using SafeMath for uint256;
 
     IERC20 public stakeToken;
-    uint256 private _totalSupply;
+    uint256 private _totalStakes;
     /* mapping(address => uint256) private _balances;
     mapping(address => uint256) private _stakingStarts; */
     mapping(address => Stake) private _stakes;
@@ -17,16 +17,16 @@ contract Staking {
     event RewardPaid(address indexed user, uint256 reward);
 
     struct Stake {
-      uint: start;
-      uint: end;
-      uint: amount;
+        uint256 start;
+        uint256 end;
+        uint256 amount;
     }
 
     function stake(uint256 amount, uint256 duration) public {
         require(amount > 0, "Cannot stake 0");
         require(duration > 0, "Cannot stake for zero duration");
 
-        _totalSupply = _totalSupply.add(amount);
+        _totalStakes = _totalStakes.add(amount);
         uint256 end = block.timestamp.add(duration);
         _stakes[msg.sender] = Stakes(block.timestamp, end, amount);
 
@@ -35,33 +35,38 @@ contract Staking {
     }
 
     function unstake() public {
-        require(_balances[msg.sender] > 0, "Cannot withdraw 0");
-        _totalSupply = _totalSupply.sub(amount);
-        _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        stakeToken.transfer(msg.sender, amount);
-        emit Unstaked(msg.sender, amount);
+        require(_stakes[msg.sender].amount > 0, "Cannot unstake 0");
+        _totalStakes = _totalStakes.sub(_stakes[msg.sender].amount);
+        _balances[msg.sender] = 0;
+        stakeToken.transfer(msg.sender, _stakes[msg.sender].amount);
+        emit Unstaked(msg.sender, _stakes[msg.sender].amount);
     }
 
-    function getReward()
-  public
-  {
-    uint256 reward = earned(msg.sender);
-    if (reward > 0) {
-      rewardToken.transfer(msg.sender, reward);
-      emit RewardPaid(msg.sender, reward);
+    function getReward() public {
+        uint256 reward = earned(msg.sender);
+        if (reward > 0) {
+            rewardToken.transfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, reward);
+        }
     }
-  }
 
-  function earned(address account)
-  public
-  view
-  returns (uint256)
-  {
-    uint 
-    return
-    balanceOf(account)
-    .mul(rewardPerToken())
-    .div(1e18)
-    .add(rewards[account]);
-  }
+    function earned(address account) public view returns (uint256) {
+        // Multiply all amounts by this to avoid rounding issues. Divide in the end
+        uint256 tempMultiplier = 1000000;
+
+        // How long we have staked for
+        uint256 duration = block.timestamp - _stakes[account].start;
+        // One year would give 1-to-1 reward. Multiply based on that
+        uint256 timeMultiplier = (duration / 365 days) * tempMultiplier;
+        // How big percentage we have of the total staked amount
+        uint256 percentageMultiplier = (_stakes[account].amount /
+            _totalStakes) * tempMultiplier;
+
+        return
+            _stakes[account]
+                .amount
+                .mul(timeMultiplier)
+                .mul(percentageMultiplier)
+                .div(tempMultiplier * tempMultiplier); // divide twice, since we multiplied with it twice
+    }
 }
