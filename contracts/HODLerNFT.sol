@@ -8,7 +8,7 @@ contract HODLerNFT is ERC721Metadata, ERC721Burnable {
         // solhint-disable-previous-line no-empty-blocks
     }
 
-    function exists(uint256 tokenId) public view returns (bool) {
+/*     function exists(uint256 tokenId) public view returns (bool) {
         return _exists(tokenId);
     }
 
@@ -18,5 +18,5 @@ contract HODLerNFT is ERC721Metadata, ERC721Burnable {
 
     function setBaseURI(string memory baseURI) public {
         _setBaseURI(baseURI);
-    }
+    } */
 }
