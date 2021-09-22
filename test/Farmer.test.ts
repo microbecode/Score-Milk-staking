@@ -5,50 +5,38 @@ import { expect } from "chai";
 //import { deployContract } from "waffle";
 //require("@nomiclabs/hardhat-waffle");
 
-describe("Farmer", function () {
+describe("Staking", function () {
   let accounts: SignerWithAddress[];
   let farmController : Contract;
   let farm : Contract;
-  let rewardToken : Contract;
   let stakeToken : Contract;
   let owner : SignerWithAddress;
   let notOwner : SignerWithAddress;
   let notOwner2 : SignerWithAddress;
   const oneToken = ethers.utils.parseUnits("1", 18);
   const tenTokens = ethers.utils.parseUnits("10", 18);
-  const rewardTokenstotal = ethers.utils.parseUnits("2", 18);
+  const stakeTokenstotal = ethers.utils.parseUnits("2", 18);
   const zero = ethers.BigNumber.from("0");
   const justAboveZero = ethers.BigNumber.from("1");
 
-  it("Unstaked farm has no rewards", async function () {
-    /* const earnedOwner = await farm.earned(owner.address); 
-    const earnedNonOwner = await farm.earned(notOwner.address); 
-    const rewardPerToken = await farm.rewardPerToken();
-    
-    expect(earnedOwner).to.equal(zero);
-    expect(earnedNonOwner).to.equal(zero);
-    expect(rewardPerToken).to.equal(zero); */
-  });
 
-  /* beforeEach(async function () {
+   beforeEach(async function () {
     accounts = await ethers.getSigners();
     owner = accounts[0];
     notOwner = accounts[1];
     notOwner2 = accounts[2];
 
-    const BonkToken = await ethers.getContractFactory("BonkToken");
-    rewardToken = await BonkToken.deploy(
-      "BONK Token v2",
-      "megaBONK",
-      "4000000",
+    const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
+    stakeToken = await stakeTokenFact.deploy(
+      owner.address,
+      stakeTokenstotal
     );
-    await rewardToken.deployed();
-    await rewardToken.enableTransfers();
-
-    const MockERC20 = await ethers.getContractFactory("MockERC20");
-    stakeToken = await MockERC20.deploy("WETH/mBONK LP Token", "WETH/mBONK");
     await stakeToken.deployed();
-    await stakeToken.getFreeTokens(owner.address, tenTokens);
+
+
+
+
+/*     await stakeToken.getFreeTokens(owner.address, tenTokens);
     await stakeToken.getFreeTokens(notOwner.address, tenTokens);
     await stakeToken.getFreeTokens(notOwner2.address, tenTokens);
 
@@ -65,28 +53,16 @@ describe("Farmer", function () {
     await farmController.setRates([1]);
     
 
-    await rewardToken.approve(farmController.address, rewardTokenstotal);
+    await rewardToken.approve(farmController.address, rewardTokenstotal); */
     
     
     
+  });
+  it("Withdrawing results in the same balance", async function () {
   });
 
-  it("Unstaked farm has no rewards", async function () {
-    const earnedOwner = await farm.earned(owner.address); 
-    const earnedNonOwner = await farm.earned(notOwner.address); 
-    const rewardPerToken = await farm.rewardPerToken();
-    
-    expect(earnedOwner).to.equal(zero);
-    expect(earnedNonOwner).to.equal(zero);
-    expect(rewardPerToken).to.equal(zero);
-  });
   
-
-  it("Unstaked farm gives no rewards", async function () {
-    await expect(farm.withdraw(justAboveZero)).to.be.revertedWith('SafeMath: subtraction overflow');
-    await expect(farm.exit()).to.be.revertedWith('Cannot withdraw 0');
-  });
-  
+/*
  
   it("Withdrawing results in the same balance", async function () {
     const initialBalance = await stakeToken.balanceOf(owner.address);
