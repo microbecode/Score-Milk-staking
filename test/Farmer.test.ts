@@ -7,8 +7,7 @@ import { expect } from "chai";
 
 describe("Staking", function () {
   let accounts: SignerWithAddress[];
-  let farmController : Contract;
-  let farm : Contract;
+  let staking : Contract;
   let stakeToken : Contract;
   let owner : SignerWithAddress;
   let notOwner : SignerWithAddress;
@@ -33,7 +32,9 @@ describe("Staking", function () {
     );
     await stakeToken.deployed();
 
-
+    const stakingFact = await ethers.getContractFactory("Staking");
+    staking = await stakingFact.deploy(stakeToken.address);
+    await staking.deployed();
 
 
 /*     await stakeToken.getFreeTokens(owner.address, tenTokens);
@@ -58,7 +59,9 @@ describe("Staking", function () {
     
     
   });
-  it("Withdrawing results in the same balance", async function () {
+  it("TODO", async function () {
+    await stakeToken.approve(staking.address, oneToken);
+    await staking.stake(oneToken, 5);
   });
 
   

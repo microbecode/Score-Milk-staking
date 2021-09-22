@@ -6,7 +6,7 @@ import "./math/SafeMath.sol";
 contract Staking {
     using SafeMath for uint256;
 
-    IERC20 public stakeToken;
+    IERC20 public _stakeToken;
     uint256 private _totalStakes;
     /* mapping(address => uint256) private _balances;
     mapping(address => uint256) private _stakingStarts; */
@@ -23,6 +23,10 @@ contract Staking {
         uint256 amount;
     }
 
+    constructor(address stakeToken) public {
+        _stakeToken = IERC20(stakeToken);
+    }
+
     function stake(uint256 amount, uint256 duration) public {
         require(amount > 0, "Cannot stake 0");
         require(duration > 0, "Cannot stake for zero duration");
@@ -31,7 +35,7 @@ contract Staking {
         uint256 end = block.timestamp.add(duration);
         _stakes[msg.sender] = Stake(block.timestamp, end, amount);
 
-        stakeToken.transferFrom(msg.sender, address(this), amount);
+        _stakeToken.transferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
 
@@ -39,7 +43,7 @@ contract Staking {
         require(_stakes[msg.sender].amount > 0, "Cannot unstake 0");
         _totalStakes = _totalStakes.sub(_stakes[msg.sender].amount);
         _stakes[msg.sender].amount = 0;
-        stakeToken.transfer(msg.sender, _stakes[msg.sender].amount);
+        _stakeToken.transfer(msg.sender, _stakes[msg.sender].amount);
         emit Unstaked(msg.sender, _stakes[msg.sender].amount);
     }
 
