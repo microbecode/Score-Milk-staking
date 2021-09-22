@@ -48,14 +48,21 @@ contract Staking {
     }
 
     function getReward() public {
-        uint256 reward = earned(msg.sender);
+        uint256 reward = getRewardAmount(msg.sender);
         if (reward > 0) {
             // TODO Transfer reward
             emit RewardPaid(msg.sender, reward);
         }
     }
 
-    function earned(address account) public view returns (uint256) {
+    function getStakeAmount(address addr) public view returns (uint256) {
+        return _stakes[addr].amount;
+    }
+
+    function getRewardAmount(address account) public view returns (uint256) {
+        if (_totalStakes == 0) {
+            return 0;
+        }
         // Multiply all amounts by this to avoid rounding issues. Divide in the end
         uint256 tempMultiplier = 1000000;
 

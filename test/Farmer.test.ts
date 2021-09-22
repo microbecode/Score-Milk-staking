@@ -59,12 +59,32 @@ describe("Staking", function () {
     
     
   });
-  it("TODO", async function () {
-    await stakeToken.approve(staking.address, oneToken);
-    await staking.stake(oneToken, 5);
+
+ /*  it("initial data is correct", async function () {
+    const bal = await stakeToken.balanceOf(owner.address);
+    const stakeBalance = await staking.getStakeAmount(owner.address);
+    const stakeReward = await staking.getRewardAmount(owner.address);
+    await staking.getReward(); // shouldn't really do anything, but doesn't revert at least
+    
+    expect(bal).to.equal(stakeTokenstotal);
+    expect(stakeBalance).to.equal(zero);
+    expect(stakeReward).to.equal(zero);
   });
 
-  
+  it("Unstaking without stake reverts", async function () {
+    await expect(staking.unstake()).to.be.revertedWith('Cannot unstake 0');
+  });
+
+  it("Staking with zero reverts", async function () {
+    await expect(staking.stake(zero, zero)).to.be.revertedWith('Cannot stake 0');
+  }); */
+
+  it("gfds", async function () {
+    await stakeToken.approve(staking.address, oneToken);
+    await staking.stake(oneToken, 5);
+
+
+  });
 /*
  
   it("Withdrawing results in the same balance", async function () {
