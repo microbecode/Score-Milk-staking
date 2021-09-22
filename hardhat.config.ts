@@ -1,6 +1,7 @@
 //require('dotenv').config()
 
-require('@nomiclabs/hardhat-waffle')
+import '@nomiclabs/hardhat-waffle';
+import { task } from "hardhat/config";
 //require('hardhat-gas-reporter')
 //require('solidity-coverage')
 

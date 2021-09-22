@@ -1,6 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./token/ERC20/IERC20.sol";
+import "./math/SafeMath.sol";
 
 contract Staking {
     using SafeMath for uint256;
@@ -28,7 +29,7 @@ contract Staking {
 
         _totalStakes = _totalStakes.add(amount);
         uint256 end = block.timestamp.add(duration);
-        _stakes[msg.sender] = Stakes(block.timestamp, end, amount);
+        _stakes[msg.sender] = Stake(block.timestamp, end, amount);
 
         stakeToken.transferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
@@ -37,7 +38,7 @@ contract Staking {
     function unstake() public {
         require(_stakes[msg.sender].amount > 0, "Cannot unstake 0");
         _totalStakes = _totalStakes.sub(_stakes[msg.sender].amount);
-        _balances[msg.sender] = 0;
+        _stakes[msg.sender].amount = 0;
         stakeToken.transfer(msg.sender, _stakes[msg.sender].amount);
         emit Unstaked(msg.sender, _stakes[msg.sender].amount);
     }
@@ -45,7 +46,7 @@ contract Staking {
     function getReward() public {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
-            rewardToken.transfer(msg.sender, reward);
+            // TODO Transfer reward
             emit RewardPaid(msg.sender, reward);
         }
     }
