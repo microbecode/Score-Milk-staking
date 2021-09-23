@@ -60,15 +60,8 @@ describe("Staking", function () {
     
   });
 
- /*  it("initial data is correct", async function () {
-    const bal = await stakeToken.balanceOf(owner.address);
-    const stakeBalance = await staking.getStakeAmount(owner.address);
-    const stakeReward = await staking.getRewardAmount(owner.address);
-    await staking.getReward(); // shouldn't really do anything, but doesn't revert at least
-    
-    expect(bal).to.equal(stakeTokenstotal);
-    expect(stakeBalance).to.equal(zero);
-    expect(stakeReward).to.equal(zero);
+   it("initial data is correct", async function () {
+    await expectInitial();
   });
 
   it("Unstaking without stake reverts", async function () {
@@ -76,14 +69,24 @@ describe("Staking", function () {
   });
 
   it("Staking with zero reverts", async function () {
-    await expect(staking.stake(zero, zero)).to.be.revertedWith('Cannot stake 0');
-  }); */
+    await expect(staking.stake(zero)).to.be.revertedWith('Cannot stake 0');
+  }); 
 
-  it("gfds", async function () {
+  const expectInitial = async () => {
+    const bal = await stakeToken.balanceOf(owner.address);
+    const stakeBalance = await staking.getStakeAmount(owner.address);
+    const stakeReward = await staking.getRewardAmount(owner.address);
+    
+    expect(bal).to.equal(stakeTokenstotal);
+    expect(stakeBalance).to.equal(zero);
+    expect(stakeReward).to.equal(zero);
+  }
+
+  it("Immediate unstake returns original state", async function () {
     await stakeToken.approve(staking.address, oneToken);
-    await staking.stake(oneToken, 5);
-
-
+    await staking.stake(oneToken);
+    await staking.unstake();
+    await expectInitial();
   });
 /*
  

@@ -19,7 +19,6 @@ contract Staking {
 
     struct Stake {
         uint256 start;
-        uint256 end;
         uint256 amount;
     }
 
@@ -27,28 +26,44 @@ contract Staking {
         _stakeToken = IERC20(stakeToken);
     }
 
-    function stake(uint256 amount, uint256 duration) public {
+    function stake(uint256 amount) public {
         require(amount > 0, "Cannot stake 0");
-        require(duration > 0, "Cannot stake for zero duration");
-
-        _totalStakes = _totalStakes.add(amount);
-        uint256 end = block.timestamp.add(duration);
-        _stakes[msg.sender] = Stake(block.timestamp, end, amount);
 
         _stakeToken.transferFrom(msg.sender, address(this), amount);
+
+        if (_stakes[msg.sender].amount > 0) {
+            // Already has an existing stake. Settle that and start a new stake
+            amount.add(_stakes[msg.sender].amount);
+            removeStake(false);
+        }
+
+        _totalStakes = _totalStakes.add(amount);
+        _stakes[msg.sender] = Stake(block.timestamp, amount);
+
         emit Staked(msg.sender, amount);
     }
 
     function unstake() public {
-        require(_stakes[msg.sender].amount > 0, "Cannot unstake 0");
-        _totalStakes = _totalStakes.sub(_stakes[msg.sender].amount);
-        _stakes[msg.sender].amount = 0;
-        _stakeToken.transfer(msg.sender, _stakes[msg.sender].amount);
-        emit Unstaked(msg.sender, _stakes[msg.sender].amount);
+        removeStake(true);
     }
 
-    function getReward() public {
+    function removeStake(bool returnTokens) private {
+        uint256 stakeAmount = _stakes[msg.sender].amount;
+        require(stakeAmount > 0, "Cannot unstake 0");
+        _totalStakes = _totalStakes.sub(stakeAmount);
+
+        if (returnTokens) {
+            _stakeToken.transfer(msg.sender, stakeAmount);
+        }
+
+        withdrawReward();
+
+        emit Unstaked(msg.sender, stakeAmount);
+    }
+
+    function withdrawReward() private {
         uint256 reward = getRewardAmount(msg.sender);
+        _stakes[msg.sender].amount = 0;
         if (reward > 0) {
             // TODO Transfer reward
             emit RewardPaid(msg.sender, reward);
@@ -64,10 +79,12 @@ contract Staking {
             return 0;
         }
         // Multiply all amounts by this to avoid rounding issues. Divide in the end
-        uint256 tempMultiplier = 1000000;
+        uint256 tempMultiplier = 10000;
 
         // How long we have staked for
         uint256 duration = block.timestamp - _stakes[account].start;
+        // Fee amount = 1 day of fees
+        uint256 fee = (1 days / duration) * tempMultiplier;
         // One year would give 1-to-1 reward. Multiply based on that
         uint256 timeMultiplier = (duration / 365 days) * tempMultiplier;
         // How big percentage we have of the total staked amount
@@ -79,6 +96,7 @@ contract Staking {
                 .amount
                 .mul(timeMultiplier)
                 .mul(percentageMultiplier)
-                .div(tempMultiplier * tempMultiplier); // divide twice, since we multiplied with it twice
+                .div(tempMultiplier**2);
+        //       .div(fee) // divide thrice, since we multiplied with it that many times
     }
 }
