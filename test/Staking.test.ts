@@ -13,8 +13,10 @@ describe("Staking", function () {
   let notOwner : SignerWithAddress;
   let notOwner2 : SignerWithAddress;
   const oneToken = ethers.utils.parseUnits("1", 18);
-  const tenTokens = ethers.utils.parseUnits("10", 18);
-  const stakeTokenstotal = ethers.utils.parseUnits("2", 18);
+  const twoTokens = ethers.utils.parseUnits("2", 18);
+  const twentyTokens = ethers.utils.parseUnits("20", 18);
+  const initialNativeBalance = twentyTokens;
+  const stakeTokenstotal = twentyTokens;
   const zero = ethers.BigNumber.from("0");
   const justAboveZero = ethers.BigNumber.from("1");
 
@@ -35,6 +37,10 @@ describe("Staking", function () {
     const stakingFact = await ethers.getContractFactory("Staking");
     staking = await stakingFact.deploy(stakeToken.address);
     await staking.deployed();
+    await owner.sendTransaction({
+      to: staking.address,
+      value: initialNativeBalance
+    });
 
 
 /*     await stakeToken.getFreeTokens(owner.address, tenTokens);
@@ -64,27 +70,52 @@ describe("Staking", function () {
     await expectInitial();
   });
 
-  it("Unstaking without stake reverts", async function () {
+   it("Unstaking without stake reverts", async function () {
     await expect(staking.unstake()).to.be.revertedWith('Cannot unstake 0');
   });
 
   it("Staking with zero reverts", async function () {
     await expect(staking.stake(zero)).to.be.revertedWith('Cannot stake 0');
-  }); 
+  });  
 
   const expectInitial = async () => {
     const bal = await stakeToken.balanceOf(owner.address);
     const stakeBalance = await staking.getStakeAmount(owner.address);
     const stakeReward = await staking.getRewardAmount(owner.address);
+    const stakeNativeBalance = await ethers.provider.getBalance(staking.address);
     
     expect(bal).to.equal(stakeTokenstotal);
     expect(stakeBalance).to.equal(zero);
     expect(stakeReward).to.equal(zero);
+    expect(stakeNativeBalance).to.equal(initialNativeBalance);
+  }
+
+  const increaseTime = async (seconds : number) => {
+    await network.provider.send("evm_increaseTime", [seconds]);
+    await network.provider.send("evm_mine");
   }
 
   it("Immediate unstake returns original state", async function () {
     await stakeToken.approve(staking.address, oneToken);
     await staking.stake(oneToken);
+    await staking.unstake();
+    await expectInitial();
+  });
+
+  it("Immediate unstake after double stake returns original state", async function () {
+    await stakeToken.approve(staking.address, twoTokens);
+    await staking.stake(oneToken);
+    await staking.stake(oneToken);
+    await staking.unstake();
+    await expectInitial();
+  });
+
+  it("Staking for the desired time double the stake", async function () {
+    await stakeToken.approve(staking.address, twoTokens);
+    await staking.stake(oneToken);
+
+    await increaseTime(3600 * 24 * 365); // one year
+
     await staking.unstake();
     await expectInitial();
   });

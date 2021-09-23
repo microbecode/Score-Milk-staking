@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 
 import "./token/ERC20/IERC20.sol";
 import "./math/SafeMath.sol";
+import "hardhat/console.sol";
 
 contract Staking {
     using SafeMath for uint256;
@@ -26,6 +27,10 @@ contract Staking {
         _stakeToken = IERC20(stakeToken);
     }
 
+    function() external payable {
+        //console.log("I got money %s", address(this).balance);
+    }
+
     function stake(uint256 amount) public {
         require(amount > 0, "Cannot stake 0");
 
@@ -33,7 +38,7 @@ contract Staking {
 
         if (_stakes[msg.sender].amount > 0) {
             // Already has an existing stake. Settle that and start a new stake
-            amount.add(_stakes[msg.sender].amount);
+            amount = amount.add(_stakes[msg.sender].amount);
             removeStake(false);
         }
 
@@ -41,6 +46,7 @@ contract Staking {
         _stakes[msg.sender] = Stake(block.timestamp, amount);
 
         emit Staked(msg.sender, amount);
+        console.log("stake balance is %s", _stakes[msg.sender].amount);
     }
 
     function unstake() public {
@@ -49,6 +55,7 @@ contract Staking {
 
     function removeStake(bool returnTokens) private {
         uint256 stakeAmount = _stakes[msg.sender].amount;
+        console.log("stakeAmount %s", stakeAmount);
         require(stakeAmount > 0, "Cannot unstake 0");
         _totalStakes = _totalStakes.sub(stakeAmount);
 
@@ -65,7 +72,8 @@ contract Staking {
         uint256 reward = getRewardAmount(msg.sender);
         _stakes[msg.sender].amount = 0;
         if (reward > 0) {
-            // TODO Transfer reward
+            (bool success, ) = msg.sender.call.value(reward)("");
+            require(success, "Transfer failed.");
             emit RewardPaid(msg.sender, reward);
         }
     }
