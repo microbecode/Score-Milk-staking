@@ -5,6 +5,51 @@ import { expect } from "chai";
 //import { deployContract } from "waffle";
 //require("@nomiclabs/hardhat-waffle");
 
+describe("Reward calculation", function () {
+  let accounts: SignerWithAddress[];
+  let staking : Contract;
+  let stakeToken : Contract;
+  let owner : SignerWithAddress;
+  const hour = ethers.BigNumber.from("3600");
+  const one = ethers.BigNumber.from("1");
+  const zero = ethers.BigNumber.from("0");
+ 
+  const twentyTokens = ethers.utils.parseUnits("20", 18);
+  const stakeTokenstotal = twentyTokens;
+
+   beforeEach(async function () {
+    accounts = await ethers.getSigners();
+    owner = accounts[0];
+
+    const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
+    stakeToken = await stakeTokenFact.deploy(
+      owner.address,
+      stakeTokenstotal
+    );
+    await stakeToken.deployed();
+
+    const stakingFact = await ethers.getContractFactory("Staking");
+    staking = await stakingFact.deploy(stakeToken.address);
+    await staking.deployed(); 
+  });
+
+  it("One hour gives one reward", async function () {
+    const reward = await staking.getRewardAmountForMoment(0, hour, 1000);
+    expect(reward).to.equal(one);
+  });
+
+  it("Less than an hour gives no reward", async function () {
+    console.log('hmmm', hour.sub(one).toString());
+    const reward = await staking.getRewardAmountForMoment(0, hour.sub(one), 1000);
+    expect(reward).to.equal(zero);
+
+    // Try with bigger stake
+    const reward2 = await staking.getRewardAmountForMoment(0, hour.sub(one), 10000000);
+    expect(reward2).to.equal(zero);
+  });
+
+});
+
 describe("Staking", function () {
   let accounts: SignerWithAddress[];
   let staking : Contract;
@@ -19,6 +64,7 @@ describe("Staking", function () {
   const stakeTokenstotal = twentyTokens;
   const zero = ethers.BigNumber.from("0");
   const justAboveZero = ethers.BigNumber.from("1");
+  const targetStakeTime = 3600 * 24 * 365; // 1 year
 
 
    beforeEach(async function () {
@@ -66,7 +112,7 @@ describe("Staking", function () {
     
   });
 
-   it("initial data is correct", async function () {
+  /*  it("initial data is correct", async function () {
     await expectInitial();
   });
 
@@ -108,17 +154,17 @@ describe("Staking", function () {
     await staking.stake(oneToken);
     await staking.unstake();
     await expectInitial();
-  });
+  }); */
 
-  it("Staking for the desired time double the stake", async function () {
+  /* it("Staking for the target time doubles the stake", async function () {
     await stakeToken.approve(staking.address, twoTokens);
     await staking.stake(oneToken);
 
-    await increaseTime(3600 * 24 * 365); // one year
+    await increaseTime(targetStakeTime); // one year
 
     await staking.unstake();
     await expectInitial();
-  });
+  }); */
 /*
  
   it("Withdrawing results in the same balance", async function () {

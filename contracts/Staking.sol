@@ -82,29 +82,51 @@ contract Staking {
         return _stakes[addr].amount;
     }
 
+    uint256 rewardPerHour = 1000;
+
     function getRewardAmount(address account) public view returns (uint256) {
-        if (_totalStakes == 0) {
+        return
+            getRewardAmountForMoment(
+                _stakes[account].start,
+                block.timestamp,
+                _stakes[account].amount
+            );
+    }
+
+    function getRewardAmountForMoment(
+        uint256 startTime,
+        uint256 nowTime,
+        uint256 stakeAmount
+    ) public view returns (uint256) {
+        /* if (_totalStakes == 0) {
             return 0;
-        }
+        } */
+        //uint256 duration = nowTime - startTime;
         // Multiply all amounts by this to avoid rounding issues. Divide in the end
-        uint256 tempMultiplier = 10000;
+        /*         uint256 tempMultiplier = 10000;
 
         // How long we have staked for
-        uint256 duration = block.timestamp - _stakes[account].start;
+        
         // Fee amount = 1 day of fees
-        uint256 fee = (1 days / duration) * tempMultiplier;
+        //uint256 fee = (1 days / duration) * tempMultiplier;
         // One year would give 1-to-1 reward. Multiply based on that
         uint256 timeMultiplier = (duration / 365 days) * tempMultiplier;
         // How big percentage we have of the total staked amount
         uint256 percentageMultiplier = (_stakes[account].amount /
-            _totalStakes) * tempMultiplier;
+            _totalStakes) * tempMultiplier; */
 
-        return
+        uint256 reward = (((nowTime - startTime) / 1 hours) * stakeAmount) /
+            rewardPerHour;
+        //console.log("reward %s and %s", reward, nowTime - startTime);
+        return reward;
+
+        /*         return
             _stakes[account]
                 .amount
-                .mul(timeMultiplier)
-                .mul(percentageMultiplier)
-                .div(tempMultiplier**2);
+                .mul(duration / 1 hours)
+                .mul(stakeAmount)
+                .div(rewardPerHour); */
+        //.div(tempMultiplier**2);
         //       .div(fee) // divide thrice, since we multiplied with it that many times
     }
 }
