@@ -89,14 +89,16 @@ contract Staking {
             getRewardAmountForMoment(
                 _stakes[account].start,
                 block.timestamp,
-                _stakes[account].amount
+                _stakes[account].amount,
+                _totalStakes
             );
     }
 
     function getRewardAmountForMoment(
         uint256 startTime,
         uint256 nowTime,
-        uint256 stakeAmount
+        uint256 stakeAmount,
+        uint256 totalStakes
     ) public view returns (uint256) {
         /* if (_totalStakes == 0) {
             return 0;
@@ -115,9 +117,9 @@ contract Staking {
         uint256 percentageMultiplier = (_stakes[account].amount /
             _totalStakes) * tempMultiplier; */
 
-        uint256 reward = (((nowTime - startTime) / 1 hours) * stakeAmount) /
-            rewardPerHour;
-        //console.log("reward %s and %s", reward, nowTime - startTime);
+        uint256 reward = (((nowTime - startTime) / 1 hours) *
+            (((stakeAmount * stakeAmount) / totalStakes))) / rewardPerHour;
+        console.log("reward %s and %s, %s", reward, stakeAmount, totalStakes);
         return reward;
 
         /*         return

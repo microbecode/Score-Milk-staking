@@ -12,6 +12,10 @@ describe("Reward calculation", function () {
   let owner : SignerWithAddress;
   const hour = ethers.BigNumber.from("3600");
   const one = ethers.BigNumber.from("1");
+  const ten = ethers.BigNumber.from("10");
+  const thousand = ethers.BigNumber.from("1000");
+  const tenThousand = ethers.BigNumber.from("10000");
+  const hundredThousand = ethers.BigNumber.from("100000");
   const zero = ethers.BigNumber.from("0");
  
   const twentyTokens = ethers.utils.parseUnits("20", 18);
@@ -34,18 +38,23 @@ describe("Reward calculation", function () {
   });
 
   it("One hour gives one reward", async function () {
-    const reward = await staking.getRewardAmountForMoment(0, hour, 1000);
+    const reward = await staking.getRewardAmountForMoment(0, hour, 1000, 1000);
     expect(reward).to.equal(one);
   });
 
   it("Less than an hour gives no reward", async function () {
     console.log('hmmm', hour.sub(one).toString());
-    const reward = await staking.getRewardAmountForMoment(0, hour.sub(one), 1000);
+    const reward = await staking.getRewardAmountForMoment(0, hour.sub(one), 1000, 1000);
     expect(reward).to.equal(zero);
 
     // Try with bigger stake
-    const reward2 = await staking.getRewardAmountForMoment(0, hour.sub(one), 10000000);
+    const reward2 = await staking.getRewardAmountForMoment(0, hour.sub(one), 1000000, 1000000);
     expect(reward2).to.equal(zero);
+  });
+
+  it("One hour gives reward relative to the total stakes", async function () {
+    const reward = await staking.getRewardAmountForMoment(0, hour, 10000, 100000);
+    expect(reward).to.equal(one);
   });
 
 });
