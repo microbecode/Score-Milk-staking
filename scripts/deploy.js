@@ -29,8 +29,8 @@ async function main() {
   console.log("NFT deployed to:", hodler.address); 
 
   // 
-await staking.setAddr(hodler.address);
-await staking.mint();
+/* await staking.setAddr(hodler.address);
+await staking.mint(); */
   
 }
 

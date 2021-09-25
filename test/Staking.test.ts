@@ -7,9 +7,9 @@ import { expect } from "chai";
 
 describe("Reward calculation", function () {
   let accounts: SignerWithAddress[];
-  let staking : Contract;
-  let stakeToken : Contract;
-  let owner : SignerWithAddress;
+  let staking: Contract;
+  let stakeToken: Contract;
+  let owner: SignerWithAddress;
   const hour = ethers.BigNumber.from("3600");
   const one = ethers.BigNumber.from("1");
   const ten = ethers.BigNumber.from("10");
@@ -17,55 +17,112 @@ describe("Reward calculation", function () {
   const tenThousand = ethers.BigNumber.from("10000");
   const hundredThousand = ethers.BigNumber.from("100000");
   const zero = ethers.BigNumber.from("0");
- 
+
   const twentyTokens = ethers.utils.parseUnits("20", 18);
   const stakeTokenstotal = twentyTokens;
 
-   beforeEach(async function () {
+  beforeEach(async function () {
     accounts = await ethers.getSigners();
     owner = accounts[0];
 
     const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
-    stakeToken = await stakeTokenFact.deploy(
-      owner.address,
-      stakeTokenstotal
-    );
+    stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
     await stakeToken.deployed();
 
     const stakingFact = await ethers.getContractFactory("Staking");
     staking = await stakingFact.deploy(stakeToken.address);
-    await staking.deployed(); 
+    await staking.deployed();
   });
 
-  it("One hour gives one reward", async function () {
+  /* it("One hour gives one reward", async function () {
     const reward = await staking.getRewardAmountForMoment(0, hour, 1000, 1000);
     expect(reward).to.equal(one);
   });
 
   it("Less than an hour gives no reward", async function () {
-    console.log('hmmm', hour.sub(one).toString());
-    const reward = await staking.getRewardAmountForMoment(0, hour.sub(one), 1000, 1000);
+    console.log("hmmm", hour.sub(one).toString());
+    const reward = await staking.getRewardAmountForMoment(
+      0,
+      hour.sub(one),
+      1000,
+      1000
+    );
     expect(reward).to.equal(zero);
 
     // Try with bigger stake
-    const reward2 = await staking.getRewardAmountForMoment(0, hour.sub(one), 1000000, 1000000);
+    const reward2 = await staking.getRewardAmountForMoment(
+      0,
+      hour.sub(one),
+      1000000,
+      1000000
+    );
     expect(reward2).to.equal(zero);
   });
 
   it("One hour gives reward relative to the total stakes", async function () {
-    const reward = await staking.getRewardAmountForMoment(0, hour, 10000, 100000);
+    const reward = await staking.getRewardAmountForMoment(
+      0,
+      hour,
+      10000,
+      100000
+    );
     expect(reward).to.equal(one);
+  }); */
+});
+
+describe("NFT functionality", function () {
+  let accounts: SignerWithAddress[];
+  let staking: Contract;
+  let stakeToken: Contract;
+  let nft1: Contract;
+  let owner: SignerWithAddress;
+  const hour = ethers.BigNumber.from("3600");
+  const one = ethers.BigNumber.from("1");
+  const ten = ethers.BigNumber.from("10");
+  const thousand = ethers.BigNumber.from("1000");
+  const tenThousand = ethers.BigNumber.from("10000");
+  const hundredThousand = ethers.BigNumber.from("100000");
+  const zero = ethers.BigNumber.from("0");
+
+  const twentyTokens = ethers.utils.parseUnits("20", 18);
+  const stakeTokenstotal = twentyTokens;
+
+  const baseUrl = "http://blah/";
+
+  beforeEach(async function () {
+    accounts = await ethers.getSigners();
+    owner = accounts[0];
+
+    const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
+    stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
+    await stakeToken.deployed();
+
+    const stakingFact = await ethers.getContractFactory("Staking");
+    staking = await stakingFact.deploy(stakeToken.address);
+    await staking.deployed();
+
+    const nft1Fact = await ethers.getContractFactory("HODLerNFT");
+    nft1 = await nft1Fact.deploy(staking.address);
+
+    await nft1.deployed();
+
+    await staking.setNFTAddresses(nft1.address, nft1.address, nft1.address);
   });
 
+  it("Minting the first NFT uses the right URL", async function () {
+    await staking.mint();
+    const url1 = await nft1.tokenURI(1);
+    expect(url1).to.equal(baseUrl + "a");
+  });
 });
 
 describe("Staking", function () {
   let accounts: SignerWithAddress[];
-  let staking : Contract;
-  let stakeToken : Contract;
-  let owner : SignerWithAddress;
-  let notOwner : SignerWithAddress;
-  let notOwner2 : SignerWithAddress;
+  let staking: Contract;
+  let stakeToken: Contract;
+  let owner: SignerWithAddress;
+  let notOwner: SignerWithAddress;
+  let notOwner2: SignerWithAddress;
   const oneToken = ethers.utils.parseUnits("1", 18);
   const twoTokens = ethers.utils.parseUnits("2", 18);
   const twentyTokens = ethers.utils.parseUnits("20", 18);
@@ -75,18 +132,14 @@ describe("Staking", function () {
   const justAboveZero = ethers.BigNumber.from("1");
   const targetStakeTime = 3600 * 24 * 365; // 1 year
 
-
-   beforeEach(async function () {
+  beforeEach(async function () {
     accounts = await ethers.getSigners();
     owner = accounts[0];
     notOwner = accounts[1];
     notOwner2 = accounts[2];
 
     const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
-    stakeToken = await stakeTokenFact.deploy(
-      owner.address,
-      stakeTokenstotal
-    );
+    stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
     await stakeToken.deployed();
 
     const stakingFact = await ethers.getContractFactory("Staking");
@@ -94,11 +147,10 @@ describe("Staking", function () {
     await staking.deployed();
     await owner.sendTransaction({
       to: staking.address,
-      value: initialNativeBalance
+      value: initialNativeBalance,
     });
 
-
-/*     await stakeToken.getFreeTokens(owner.address, tenTokens);
+    /*     await stakeToken.getFreeTokens(owner.address, tenTokens);
     await stakeToken.getFreeTokens(notOwner.address, tenTokens);
     await stakeToken.getFreeTokens(notOwner2.address, tenTokens);
 
@@ -116,9 +168,6 @@ describe("Staking", function () {
     
 
     await rewardToken.approve(farmController.address, rewardTokenstotal); */
-    
-    
-    
   });
 
   /*  it("initial data is correct", async function () {
@@ -174,7 +223,7 @@ describe("Staking", function () {
     await staking.unstake();
     await expectInitial();
   }); */
-/*
+  /*
  
   it("Withdrawing results in the same balance", async function () {
     const initialBalance = await stakeToken.balanceOf(owner.address);

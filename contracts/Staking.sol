@@ -14,7 +14,11 @@ contract Staking {
     mapping(address => uint256) private _stakingStarts; */
     mapping(address => Stake) private _stakes;
 
-    HODLerNFT private _nft1;
+    HODLerNFT public _nft1;
+    HODLerNFT public _nft2;
+    HODLerNFT public _nft3;
+
+    bool private nftAddressesSet = false;
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
@@ -34,8 +38,17 @@ contract Staking {
         //console.log("I got money %s", address(this).balance);
     }
 
-    function setAddr(address nft1) public {
+    function setNFTAddresses(
+        address nft1,
+        address nft2,
+        address nft3
+    ) public {
+        require(!nftAddressesSet, "You can only set addresses once");
         _nft1 = HODLerNFT(nft1);
+        _nft2 = HODLerNFT(nft1);
+        _nft3 = HODLerNFT(nft1);
+
+        nftAddressesSet = true;
     }
 
     function mint() public {

@@ -28,7 +28,7 @@ contract HODLerNFT is ERC721Metadata {
 
         uint256 newItemId = _tokenIds.current();
         _mint(receiver, newItemId);
-        string memory usedHash = _hashes[newItemId % _hashes.length];
+        string memory usedHash = _hashes[((newItemId - 1) % _hashes.length)];
         console.log("minting with hash %s", usedHash);
         _setTokenURI(newItemId, usedHash);
     }
