@@ -1,14 +1,38 @@
 pragma solidity ^0.5.0;
 
 import "./token/ERC721/ERC721Metadata.sol";
-import "./token/ERC721/ERC721Burnable.sol";
+import "./drafts/Counters.sol";
+import "hardhat/console.sol";
 
-contract HODLerNFT is ERC721Metadata, ERC721Burnable {
-    constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
-        // solhint-disable-previous-line no-empty-blocks
+//import "./token/ERC721/ERC721Burnable.sol";
+
+contract HODLerNFT is ERC721Metadata {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
+
+    address private _stakingContr;
+
+    string[] private _hashes;
+
+    constructor(address stakingContr) public ERC721Metadata("a", "b") {
+        _stakingContr = stakingContr;
+        _setBaseURI("http://blah/");
+
+        _hashes.push("a");
+        _hashes.push("b");
     }
 
-/*     function exists(uint256 tokenId) public view returns (bool) {
+    function mint(address receiver) public {
+        require(msg.sender == _stakingContr, "Only staking contract can mint");
+        _tokenIds.increment();
+
+        uint256 newItemId = _tokenIds.current();
+        _mint(receiver, newItemId);
+        string memory usedHash = _hashes[newItemId % _hashes.length];
+        _setTokenURI(newItemId, usedHash);
+    }
+
+    /*     function exists(uint256 tokenId) public view returns (bool) {
         return _exists(tokenId);
     }
 
