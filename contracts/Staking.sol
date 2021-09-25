@@ -3,6 +3,7 @@ pragma solidity ^0.5.0;
 import "./token/ERC20/IERC20.sol";
 import "./math/SafeMath.sol";
 import "hardhat/console.sol";
+import "./HODLerNFT.sol";
 
 contract Staking {
     using SafeMath for uint256;
@@ -12,6 +13,8 @@ contract Staking {
     /* mapping(address => uint256) private _balances;
     mapping(address => uint256) private _stakingStarts; */
     mapping(address => Stake) private _stakes;
+
+    HODLerNFT private _nft1;
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
@@ -29,6 +32,14 @@ contract Staking {
 
     function() external payable {
         //console.log("I got money %s", address(this).balance);
+    }
+
+    function setAddr(address nft1) public {
+        _nft1 = HODLerNFT(nft1);
+    }
+
+    function mint() public {
+        _nft1.mint(msg.sender);
     }
 
     function stake(uint256 amount) public {
@@ -119,6 +130,7 @@ contract Staking {
 
         uint256 reward = (((nowTime - startTime) / 1 hours) *
             (((stakeAmount * stakeAmount) / totalStakes))) / rewardPerHour;
+
         console.log("reward %s and %s, %s", reward, stakeAmount, totalStakes);
         return reward;
 
