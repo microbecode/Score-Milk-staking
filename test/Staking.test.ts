@@ -76,13 +76,6 @@ describe("NFT functionality", function () {
   let stakeToken: Contract;
   let nft1: Contract;
   let owner: SignerWithAddress;
-  const hour = ethers.BigNumber.from("3600");
-  const one = ethers.BigNumber.from("1");
-  const ten = ethers.BigNumber.from("10");
-  const thousand = ethers.BigNumber.from("1000");
-  const tenThousand = ethers.BigNumber.from("10000");
-  const hundredThousand = ethers.BigNumber.from("100000");
-  const zero = ethers.BigNumber.from("0");
 
   const twentyTokens = ethers.utils.parseUnits("20", 18);
   const stakeTokenstotal = twentyTokens;
@@ -113,6 +106,18 @@ describe("NFT functionality", function () {
     await staking.mint();
     const url1 = await nft1.tokenURI(1);
     expect(url1).to.equal(baseUrl + "a");
+  });
+
+  it("Minting multiple NFTs rotates the URLs", async function () {
+    await staking.mint();
+    await staking.mint();
+    await staking.mint();
+    const url1 = await nft1.tokenURI(1);
+    const url2 = await nft1.tokenURI(2);
+    const url3 = await nft1.tokenURI(3);
+    expect(url1).to.equal(baseUrl + "a");
+    expect(url2).to.equal(baseUrl + "b");
+    expect(url3).to.equal(baseUrl + "a");
   });
 });
 
