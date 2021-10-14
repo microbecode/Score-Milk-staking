@@ -224,8 +224,8 @@ describe("Staking", function () {
 
   it("Immediate unstake after double stake returns original state", async function () {
     await stakeToken.connect(staker1).approve(staking.address, twoTokens);
-    await staking.connect(staker1).connect(staker1).stake(oneToken);
-    await staking.stake(oneToken);
+    await staking.connect(staker1).stake(oneToken);
+    await staking.connect(staker1).stake(oneToken);
     await staking.connect(staker1).withdraw(twoTokens);
     await expectInitial();
   });
@@ -291,7 +291,7 @@ describe("Staking", function () {
     await increaseTime(rewardsDuration / 2);
 
     await staking.connect(staker1).exit();
-    const rewardBalance = await rewardToken.balanceOf(owner.address);
+    const rewardBalance = await rewardToken.balanceOf(staker1.address);
 
     expect(rewardBalance).to.be.closeTo(twoTokens, 10e7);
   });
