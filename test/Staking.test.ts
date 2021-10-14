@@ -1,9 +1,9 @@
 import { ethers, network, waffle } from "hardhat";
-import { Contract, Signer } from "ethers";
+import { BigNumber, Contract, Signer } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "chai";
 //import { deployContract } from "waffle";
-//require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-waffle");
 
 describe("Reward calculation", function () {
   /* let accounts: SignerWithAddress[];
@@ -71,7 +71,7 @@ describe("Reward calculation", function () {
 });
 
 describe("NFT functionality", function () {
- /*  let accounts: SignerWithAddress[];
+  /*  let accounts: SignerWithAddress[];
   let staking: Contract;
   let stakeToken: Contract;
   let nft1: Contract;
@@ -127,126 +127,193 @@ describe("Staking", function () {
   let stakeToken: Contract;
   let rewardToken: Contract;
   let owner: SignerWithAddress;
-  let notOwner: SignerWithAddress;
-  let notOwner2: SignerWithAddress;
+  let staker1: SignerWithAddress;
+  let staker2: SignerWithAddress;
+  let staker3: SignerWithAddress;
   let rewardDistributer: SignerWithAddress;
   const oneToken = ethers.utils.parseUnits("1", 18);
   const twoTokens = ethers.utils.parseUnits("2", 18);
   const twentyTokens = ethers.utils.parseUnits("20", 18);
+  const thousandTokens = ethers.utils.parseUnits("1000", 18);
   const initialNativeBalance = twentyTokens;
   const stakeTokenstotal = twentyTokens;
   const rewardTokenstotal = twentyTokens;
-  const zero = ethers.BigNumber.from("0");
+  const zero = ethers.BigNumber.from("0") as BigNumber;
   const justAboveZero = ethers.BigNumber.from("1");
-  const targetStakeTime = 60 * 60* 24 * 7; // 7 days
+  const rewardsDuration = 60 * 60 * 24 * 7; // 7 days
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
     owner = accounts[0];
-    notOwner = accounts[1];
-    notOwner2 = accounts[2];
-    rewardDistributer = accounts[3];
+    staker1 = accounts[1];
+    staker2 = accounts[2];
+    staker3 = accounts[3];
+    rewardDistributer = accounts[4];
 
     const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
-    stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
+    stakeToken = await stakeTokenFact.deploy(owner.address, thousandTokens);
     await stakeToken.deployed();
 
+    stakeToken.transfer(staker1.address, twentyTokens);
+    stakeToken.transfer(staker2.address, twentyTokens);
+    stakeToken.transfer(staker3.address, twentyTokens);
+
     const rewardTokenFact = await ethers.getContractFactory("ERC20Mock");
-    rewardToken = await rewardTokenFact.deploy(owner.address, rewardTokenstotal);
+    rewardToken = await rewardTokenFact.deploy(
+      rewardDistributer.address,
+      thousandTokens
+    );
     await rewardToken.deployed();
 
     const stakingFact = await ethers.getContractFactory("StakingRewards");
-    staking = await stakingFact.deploy(owner.address, rewardDistributer.address, rewardToken.address, stakeToken.address);
+    staking = await stakingFact.deploy(
+      owner.address,
+      rewardDistributer.address,
+      rewardToken.address,
+      stakeToken.address
+    );
     await staking.deployed();
 
- /*    await owner.sendTransaction({
+    /*    await owner.sendTransaction({
       to: staking.address,
       value: initialNativeBalance,
     }); */
   });
 
   it("initial data is correct", async function () {
-     await expectInitial(); 
+    await expectInitial();
   });
 
   const expectInitial = async () => {
-    const stakeTokenBalance = await stakeToken.balanceOf(owner.address);
     const rewardTokenBalance = await rewardToken.balanceOf(owner.address);
     const stakeBalance = await staking.balanceOf(owner.address);
     const stakeReward = await staking.earned(owner.address);
-/*     const stakeNativeBalance = await ethers.provider.getBalance(staking.address); */
-    
-    expect(stakeTokenBalance).to.equal(stakeTokenstotal);
-    expect(rewardTokenBalance).to.equal(rewardTokenstotal);
+    const updateTime = await staking.lastUpdateTime();
+    const periodFinish = await staking.periodFinish();
+    /*     const stakeNativeBalance = await ethers.provider.getBalance(staking.address); */
+
+    expect(rewardTokenBalance).to.equal(zero);
     expect(stakeBalance).to.equal(zero);
     expect(stakeReward).to.equal(zero);
+    expect(updateTime).to.equal(zero);
+    expect(periodFinish).to.equal(zero);
     /* expect(stakeNativeBalance).to.equal(initialNativeBalance); */
-  }
- 
-    
+  };
 
-   it("Unstaking without stake reverts", async function () {
-    await expect(staking.withdraw(zero)).to.be.revertedWith('Cannot withdraw 0');
+  it("Unstaking without stake reverts", async function () {
+    await expect(staking.withdraw(zero)).to.be.revertedWith(
+      "Cannot withdraw 0"
+    );
   });
 
   it("Staking with zero reverts", async function () {
-    await expect(staking.stake(zero)).to.be.revertedWith('Cannot stake 0');
-  });  
+    await expect(staking.stake(zero)).to.be.revertedWith("Cannot stake 0");
+  });
 
-  
-
-  const increaseTime = async (seconds : number) => {
+  const increaseTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds]);
     await network.provider.send("evm_mine");
-  }
- 
+  };
+
   it("Immediate unstake returns original state", async function () {
-    await stakeToken.approve(staking.address, oneToken);
-    await staking.stake(oneToken);
-    await staking.withdraw(oneToken);
+    await stakeToken.connect(staker1).approve(staking.address, oneToken);
+    await staking.connect(staker1).stake(oneToken);
+    await staking.connect(staker1).withdraw(oneToken);
     await expectInitial();
   });
 
   it("Immediate unstake after double stake returns original state", async function () {
-    await stakeToken.approve(staking.address, twoTokens);
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await staking.connect(staker1).connect(staker1).stake(oneToken);
     await staking.stake(oneToken);
-    await staking.stake(oneToken);
-    await staking.withdraw(twoTokens);
+    await staking.connect(staker1).withdraw(twoTokens);
     await expectInitial();
-  }); 
-  
-   it("Staking without rewards gives nothing", async function () {
-    await stakeToken.approve(staking.address, twoTokens);
-    await staking.stake(oneToken);
-
-    await increaseTime(targetStakeTime);
-
-    await staking.exit();
-    await expectInitial();
-  }); 
-
-  it("Reward insertion", async function () {
-    await rewardToken.transfer(staking.address, twoTokens);
-
-    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
-    
-    await expectInitial();
-  }); 
-
-  /*
- 
-  it("Withdrawing results in the same balance", async function () {
-    const initialBalance = await stakeToken.balanceOf(owner.address);
-    await stakeToken.approve(farm.address, oneToken);
-    await farm.stake(oneToken);
-    const middleBalance = await stakeToken.balanceOf(owner.address);
-    await farm.withdraw(oneToken);
-    const afterBalance = await stakeToken.balanceOf(owner.address);
-    
-    expect(initialBalance).to.equal(afterBalance);
-    expect(middleBalance).to.equal(afterBalance.sub(oneToken));
   });
 
+  it("Staking without rewards gives nothing", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await staking.connect(staker1).stake(oneToken);
+
+    await increaseTime(rewardsDuration);
+
+    await staking.connect(staker1).exit();
+    await expectInitial();
+  });
+
+  it("Reward insertion updates variables", async function () {
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    const update = await staking.lastUpdateTime();
+    const periodFinish = await staking.periodFinish();
+
+    const currBlock = await ethers.provider.getBlock(
+      await ethers.provider.getBlockNumber()
+    );
+    expect(update).to.gt(zero);
+    expect(periodFinish).to.equal(update.add(rewardsDuration));
+    expect(update).to.equal(currBlock.timestamp);
+  });
+
+  it("Single staking gives all rewards", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await staking.connect(staker1).stake(oneToken);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    await increaseTime(rewardsDuration);
+
+    console.log("aaa", (await staking.earned(staker1.address)).toString());
+
+    await staking.connect(staker1).exit();
+    const rewardBalance = await rewardToken.balanceOf(staker1.address);
+
+    expect(rewardBalance).to.be.closeTo(twoTokens, 10e7);
+  });
+
+  it("Single user, multiple stakes gives all rewards", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await staking.connect(staker1).stake(oneToken);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    await increaseTime(rewardsDuration / 2);
+    await staking.connect(staker1).stake(oneToken);
+    await increaseTime(rewardsDuration / 2);
+
+    await staking.connect(staker1).exit();
+    const rewardBalance = await rewardToken.balanceOf(owner.address);
+
+    expect(rewardBalance).to.be.closeTo(twoTokens, 10e7);
+  });
+  /* 
+  it("Single user, multiple stakes gives all rewards", async function () {
+    await stakeToken.approve(staking.address, twoTokens);
+    await staking.stake(oneToken);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    await increaseTime(rewardsDuration);
+
+    await staking.exit();
+    const rewardBalance = await rewardToken.balanceOf(owner.address);
+
+    expect(rewardBalance).to.be.closeTo(twoTokens, 10e7);
+  }); */
+
+  /* 
   // Two participants in the same farm, with the same stake
   it("Staking gives rewards to two participants", async function () {
     await farmController.notifyRewards(rewardTokenstotal);
@@ -259,20 +326,20 @@ describe("Staking", function () {
     await farm.connect(notOwner).stake(oneToken);
 
     await stakeToken.connect(notOwner2).approve(farm.address, oneToken);
-    await farm.connect(notOwner2).stake(oneToken);   
+    await farm.connect(notOwner2).stake(oneToken);
 
     // Increase time by almost 1 week
     await network.provider.send("evm_increaseTime", [3550 * 24 * 7]);
     await network.provider.send("evm_mine");
 
     await farm.connect(notOwner).getReward();
-    await farm.connect(notOwner).withdraw(oneToken); 
+    await farm.connect(notOwner).withdraw(oneToken);
 
     await farm.connect(notOwner2).getReward();
-    await farm.connect(notOwner2).withdraw(oneToken);   
+    await farm.connect(notOwner2).withdraw(oneToken);
 
     //console.log('farm balance',  (await rewardToken.balanceOf(farm.address)).toString());
-    
+
     const afterBalance = await rewardToken.balanceOf(notOwner.address);
     const afterOtherBalance = await rewardToken.balanceOf(notOwner2.address);
     const afterStakeBalance = await stakeToken.balanceOf(notOwner.address);
@@ -285,8 +352,12 @@ describe("Staking", function () {
 
     const precision = 1e13; // remove some precision from numbers
     // make sure both participants get the same amount
-    expect(afterOtherBalance.div(precision)).to.equal(afterBalance.div(precision));
-  });
+    expect(afterOtherBalance.div(precision)).to.equal(
+      afterBalance.div(precision)
+    );
+  }); */
+
+  /*
 
   // Two participants, each in his own farm. Farms are set to have equal reward rates.
   it("Two farms give equal rewards", async function () {
