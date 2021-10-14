@@ -135,9 +135,10 @@ describe("Staking", function () {
   const twentyTokens = ethers.utils.parseUnits("20", 18);
   const initialNativeBalance = twentyTokens;
   const stakeTokenstotal = twentyTokens;
+  const rewardTokenstotal = twentyTokens;
   const zero = ethers.BigNumber.from("0");
   const justAboveZero = ethers.BigNumber.from("1");
-  const targetStakeTime = 3600 * 24 * 365; // 1 year
+  const targetStakeTime = 60 * 60* 24 * 7; // 7 days
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
@@ -151,7 +152,7 @@ describe("Staking", function () {
     await stakeToken.deployed();
 
     const rewardTokenFact = await ethers.getContractFactory("ERC20Mock");
-    rewardToken = await rewardTokenFact.deploy(owner.address, stakeTokenstotal);
+    rewardToken = await rewardTokenFact.deploy(owner.address, rewardTokenstotal);
     await rewardToken.deployed();
 
     const stakingFact = await ethers.getContractFactory("StakingRewards");
@@ -169,21 +170,23 @@ describe("Staking", function () {
   });
 
   const expectInitial = async () => {
-    const bal = await stakeToken.balanceOf(owner.address);
+    const stakeTokenBalance = await stakeToken.balanceOf(owner.address);
+    const rewardTokenBalance = await rewardToken.balanceOf(owner.address);
     const stakeBalance = await staking.balanceOf(owner.address);
     const stakeReward = await staking.earned(owner.address);
-    const stakeNativeBalance = await ethers.provider.getBalance(staking.address);
+/*     const stakeNativeBalance = await ethers.provider.getBalance(staking.address); */
     
-    expect(bal).to.equal(stakeTokenstotal);
+    expect(stakeTokenBalance).to.equal(stakeTokenstotal);
+    expect(rewardTokenBalance).to.equal(rewardTokenstotal);
     expect(stakeBalance).to.equal(zero);
     expect(stakeReward).to.equal(zero);
     /* expect(stakeNativeBalance).to.equal(initialNativeBalance); */
   }
-/* 
+ 
     
 
    it("Unstaking without stake reverts", async function () {
-    await expect(staking.unstake()).to.be.revertedWith('Cannot unstake 0');
+    await expect(staking.withdraw(zero)).to.be.revertedWith('Cannot withdraw 0');
   });
 
   it("Staking with zero reverts", async function () {
@@ -200,7 +203,7 @@ describe("Staking", function () {
   it("Immediate unstake returns original state", async function () {
     await stakeToken.approve(staking.address, oneToken);
     await staking.stake(oneToken);
-    await staking.unstake();
+    await staking.withdraw(oneToken);
     await expectInitial();
   });
 
@@ -208,20 +211,29 @@ describe("Staking", function () {
     await stakeToken.approve(staking.address, twoTokens);
     await staking.stake(oneToken);
     await staking.stake(oneToken);
-    await staking.unstake();
-    await expectInitial();
-  });  
-
-   it("Staking for the target time doubles the stake", async function () {
-    await stakeToken.approve(staking.address, twoTokens);
-    await staking.stake(oneToken);
-
-    await increaseTime(targetStakeTime); // one year
-
-    await staking.unstake();
+    await staking.withdraw(twoTokens);
     await expectInitial();
   }); 
   
+   it("Staking without rewards gives nothing", async function () {
+    await stakeToken.approve(staking.address, twoTokens);
+    await staking.stake(oneToken);
+
+    await increaseTime(targetStakeTime);
+
+    await staking.exit();
+    await expectInitial();
+  }); 
+
+  it("Reward insertion", async function () {
+    await rewardToken.transfer(staking.address, twoTokens);
+
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+    
+    await expectInitial();
+  }); 
+
+  /*
  
   it("Withdrawing results in the same balance", async function () {
     const initialBalance = await stakeToken.balanceOf(owner.address);
