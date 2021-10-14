@@ -6,7 +6,7 @@ import { expect } from "chai";
 //require("@nomiclabs/hardhat-waffle");
 
 describe("Reward calculation", function () {
-  let accounts: SignerWithAddress[];
+  /* let accounts: SignerWithAddress[];
   let staking: Contract;
   let stakeToken: Contract;
   let owner: SignerWithAddress;
@@ -34,7 +34,7 @@ describe("Reward calculation", function () {
     await staking.deployed();
   });
 
-  /* it("One hour gives one reward", async function () {
+   it("One hour gives one reward", async function () {
     const reward = await staking.getRewardAmountForMoment(0, hour, 1000, 1000);
     expect(reward).to.equal(one);
   });
@@ -67,11 +67,11 @@ describe("Reward calculation", function () {
       100000
     );
     expect(reward).to.equal(one);
-  }); */
+  });  */
 });
 
 describe("NFT functionality", function () {
-  let accounts: SignerWithAddress[];
+ /*  let accounts: SignerWithAddress[];
   let staking: Contract;
   let stakeToken: Contract;
   let nft1: Contract;
@@ -118,16 +118,18 @@ describe("NFT functionality", function () {
     expect(url1).to.equal(baseUrl + "a");
     expect(url2).to.equal(baseUrl + "b");
     expect(url3).to.equal(baseUrl + "a");
-  });
+  }); */
 });
 
 describe("Staking", function () {
   let accounts: SignerWithAddress[];
   let staking: Contract;
   let stakeToken: Contract;
+  let rewardToken: Contract;
   let owner: SignerWithAddress;
   let notOwner: SignerWithAddress;
   let notOwner2: SignerWithAddress;
+  let rewardDistributer: SignerWithAddress;
   const oneToken = ethers.utils.parseUnits("1", 18);
   const twoTokens = ethers.utils.parseUnits("2", 18);
   const twentyTokens = ethers.utils.parseUnits("20", 18);
@@ -142,42 +144,43 @@ describe("Staking", function () {
     owner = accounts[0];
     notOwner = accounts[1];
     notOwner2 = accounts[2];
+    rewardDistributer = accounts[3];
 
     const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
     stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
     await stakeToken.deployed();
 
-    const stakingFact = await ethers.getContractFactory("Staking");
-    staking = await stakingFact.deploy(stakeToken.address);
+    const rewardTokenFact = await ethers.getContractFactory("ERC20Mock");
+    rewardToken = await rewardTokenFact.deploy(owner.address, stakeTokenstotal);
+    await rewardToken.deployed();
+
+    const stakingFact = await ethers.getContractFactory("StakingRewards");
+    staking = await stakingFact.deploy(owner.address, rewardDistributer.address, rewardToken.address, stakeToken.address);
     await staking.deployed();
-    await owner.sendTransaction({
+
+ /*    await owner.sendTransaction({
       to: staking.address,
       value: initialNativeBalance,
-    });
-
-    /*     await stakeToken.getFreeTokens(owner.address, tenTokens);
-    await stakeToken.getFreeTokens(notOwner.address, tenTokens);
-    await stakeToken.getFreeTokens(notOwner2.address, tenTokens);
-
-    const contrFactory = await ethers.getContractFactory("FarmController");
-    farmController = await contrFactory.deploy(rewardToken.address);
-    await farmController.deployed();
-    
-    await farmController.addFarm(stakeToken.address, { gasLimit: 2000000});
-
-    const farmAddr = await farmController.getFarm(0);
-    const FarmFactory = await ethers.getContractFactory("LPFarm");
-    farm = FarmFactory.attach(farmAddr);
-
-    await farmController.setRates([1]);
-    
-
-    await rewardToken.approve(farmController.address, rewardTokenstotal); */
+    }); */
   });
 
-  /*  it("initial data is correct", async function () {
-    await expectInitial();
+  it("initial data is correct", async function () {
+     await expectInitial(); 
   });
+
+  const expectInitial = async () => {
+    const bal = await stakeToken.balanceOf(owner.address);
+    const stakeBalance = await staking.balanceOf(owner.address);
+    const stakeReward = await staking.earned(owner.address);
+    const stakeNativeBalance = await ethers.provider.getBalance(staking.address);
+    
+    expect(bal).to.equal(stakeTokenstotal);
+    expect(stakeBalance).to.equal(zero);
+    expect(stakeReward).to.equal(zero);
+    /* expect(stakeNativeBalance).to.equal(initialNativeBalance); */
+  }
+/* 
+    
 
    it("Unstaking without stake reverts", async function () {
     await expect(staking.unstake()).to.be.revertedWith('Cannot unstake 0');
@@ -187,23 +190,13 @@ describe("Staking", function () {
     await expect(staking.stake(zero)).to.be.revertedWith('Cannot stake 0');
   });  
 
-  const expectInitial = async () => {
-    const bal = await stakeToken.balanceOf(owner.address);
-    const stakeBalance = await staking.getStakeAmount(owner.address);
-    const stakeReward = await staking.getRewardAmount(owner.address);
-    const stakeNativeBalance = await ethers.provider.getBalance(staking.address);
-    
-    expect(bal).to.equal(stakeTokenstotal);
-    expect(stakeBalance).to.equal(zero);
-    expect(stakeReward).to.equal(zero);
-    expect(stakeNativeBalance).to.equal(initialNativeBalance);
-  }
+  
 
   const increaseTime = async (seconds : number) => {
     await network.provider.send("evm_increaseTime", [seconds]);
     await network.provider.send("evm_mine");
   }
-
+ 
   it("Immediate unstake returns original state", async function () {
     await stakeToken.approve(staking.address, oneToken);
     await staking.stake(oneToken);
@@ -217,9 +210,9 @@ describe("Staking", function () {
     await staking.stake(oneToken);
     await staking.unstake();
     await expectInitial();
-  }); */
+  });  
 
-  /* it("Staking for the target time doubles the stake", async function () {
+   it("Staking for the target time doubles the stake", async function () {
     await stakeToken.approve(staking.address, twoTokens);
     await staking.stake(oneToken);
 
@@ -227,8 +220,8 @@ describe("Staking", function () {
 
     await staking.unstake();
     await expectInitial();
-  }); */
-  /*
+  }); 
+  
  
   it("Withdrawing results in the same balance", async function () {
     const initialBalance = await stakeToken.balanceOf(owner.address);
@@ -334,5 +327,5 @@ describe("Staking", function () {
 
     // make sure both participants get the same amount
     expect(afterOtherBalance).to.equal(afterBalance);
-  }); */
+  });  */
 });
