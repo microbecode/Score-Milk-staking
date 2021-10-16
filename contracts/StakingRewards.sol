@@ -24,7 +24,6 @@ contract StakingRewards is
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public rewardsToken;
     IERC20 public stakingToken;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -43,10 +42,8 @@ contract StakingRewards is
     constructor(
         address _owner,
         address _rewardsDistribution,
-        address _rewardsToken,
         address _stakingToken
     ) public Ownable() {
-        rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC20(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
         if (_owner != msg.sender) {
@@ -126,7 +123,9 @@ contract StakingRewards is
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardsToken.safeTransfer(msg.sender, reward);
+            /*        rewardsToken.safeTransfer(msg.sender, reward); */
+            (bool success, ) = msg.sender.call.value(reward)("");
+            require(success, "Transfer failed");
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -138,32 +137,34 @@ contract StakingRewards is
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function notifyRewardAmount(uint256 reward)
+    function notifyRewardAmount()
         external
+        payable
         onlyRewardsDistribution
         updateReward(address(0))
     {
+        require(msg.value > 0, "Can't insert zero reward");
         if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(rewardsDuration);
+            rewardRate = msg.value.div(rewardsDuration);
         } else {
             uint256 remaining = periodFinish.sub(block.timestamp);
             uint256 leftover = remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(rewardsDuration);
+            rewardRate = msg.value.add(leftover).div(rewardsDuration);
         }
 
         // Ensure the provided reward amount is not more than the balance in the contract.
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint256 balance = rewardsToken.balanceOf(address(this));
+        /*         uint256 balance = rewardsToken.balanceOf(address(this));
         require(
             rewardRate <= balance.div(rewardsDuration),
             "Provided reward too high"
-        );
+        ); */
 
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
-        emit RewardAdded(reward);
+        emit RewardAdded(msg.value);
     }
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders

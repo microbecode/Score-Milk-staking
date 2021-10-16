@@ -7,7 +7,7 @@ import "./ownership/Ownable.sol";
 contract RewardsDistributionRecipient is Ownable {
     address public rewardsDistribution;
 
-    function notifyRewardAmount(uint256 reward) external;
+    function notifyRewardAmount() external payable;
 
     modifier onlyRewardsDistribution() {
         require(

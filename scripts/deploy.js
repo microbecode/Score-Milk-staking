@@ -13,8 +13,8 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
-  const stakingFact = await hre.ethers.getContractFactory("Staking");
-  const staking = await stakingFact.deploy("0x0ae55ce4a7762752193309cecb2a854ec5a27bc1"); // dummy address
+  const stakingFact = await hre.ethers.getContractFactory("StakingRewards");
+  const staking = await stakingFact.deploy("0x0ae55ce4a7762752193309cecb2a854ec5a27bc1", "0x0ae55ce4a7762752193309cecb2a854ec5a27bc1", "0x0ae55ce4a7762752193309cecb2a854ec5a27bc1"); // dummy address
 
   await staking.deployed();
 
