@@ -353,6 +353,36 @@ describe("Staking", function () {
     expect(rewardBalance1).to.be.gt(0);
   });
 
+  it("Two inequal stakers, one enters halfway, gives inequal rewards", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, oneToken);
+    await stakeToken.connect(staker2).approve(staking.address, oneToken);
+
+    await staking.connect(staker1).stake(oneToken);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+    await setAutoMine(true);
+    await increaseTime(rewardsDuration / 2);
+
+    await staking.connect(staker2).stake(oneToken);
+
+    await increaseTime(rewardsDuration / 2);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).exit();
+    await staking.connect(staker2).exit();
+    await setAutoMine(true);
+
+    const rewardBalance1 = await rewardToken.balanceOf(staker1.address);
+    const rewardBalance2 = await rewardToken.balanceOf(staker2.address);
+
+    //console.log("bal", rewardBalance1.toString(), rewardBalance2.toString());
+    expect(rewardBalance1).to.be.closeTo(rewardBalance2.mul(3), 10e13);
+    expect(rewardBalance1).to.be.gt(0);
+  });
+
   it("Two stakers for multiple reward periods", async function () {
     await stakeToken.connect(staker1).approve(staking.address, twoTokens);
     await stakeToken.connect(staker2).approve(staking.address, twoTokens);
