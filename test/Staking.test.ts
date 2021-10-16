@@ -210,11 +210,6 @@ describe("Staking", function () {
     await expect(staking.stake(zero)).to.be.revertedWith("Cannot stake 0");
   });
 
-  const increaseTime = async (seconds: number) => {
-    await network.provider.send("evm_increaseTime", [seconds]);
-    await network.provider.send("evm_mine");
-  };
-
   it("Immediate unstake returns original state", async function () {
     await stakeToken.connect(staker1).approve(staking.address, oneToken);
     await staking.connect(staker1).stake(oneToken);
@@ -269,8 +264,6 @@ describe("Staking", function () {
 
     await increaseTime(rewardsDuration);
 
-    console.log("aaa", (await staking.earned(staker1.address)).toString());
-
     await staking.connect(staker1).exit();
     const rewardBalance = await rewardToken.balanceOf(staker1.address);
 
@@ -295,6 +288,132 @@ describe("Staking", function () {
 
     expect(rewardBalance).to.be.closeTo(twoTokens, 10e7);
   });
+
+  it("Two equal stakers, gives equal rewards", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await stakeToken.connect(staker2).approve(staking.address, twoTokens);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).stake(oneToken);
+    await staking.connect(staker2).stake(oneToken);
+    await setAutoMine(true);
+    await network.provider.send("evm_mine");
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    await increaseTime(rewardsDuration / 2);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).exit();
+    await staking.connect(staker2).exit();
+    await setAutoMine(true);
+
+    const rewardBalance1 = await rewardToken.balanceOf(staker1.address);
+    const rewardBalance2 = await rewardToken.balanceOf(staker2.address);
+
+    expect(rewardBalance1).to.eq(rewardBalance2);
+    expect(rewardBalance1).to.be.gt(0);
+  });
+
+  it("Two inequal stakers, gives inequal rewards", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await stakeToken.connect(staker2).approve(staking.address, oneToken);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).stake(twoTokens);
+    await staking.connect(staker2).stake(oneToken);
+    await setAutoMine(true);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    await increaseTime(rewardsDuration / 4);
+
+    // Increase rewards
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, oneToken);
+    await staking.connect(rewardDistributer).notifyRewardAmount(oneToken);
+    await increaseTime(rewardsDuration / 2);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).exit();
+    await staking.connect(staker2).exit();
+    await setAutoMine(true);
+
+    const rewardBalance1 = await rewardToken.balanceOf(staker1.address);
+    const rewardBalance2 = await rewardToken.balanceOf(staker2.address);
+
+    expect(rewardBalance1).to.eq(rewardBalance2.mul(2));
+    expect(rewardBalance1).to.be.gt(0);
+  });
+
+  it("Two stakers for multiple reward periods", async function () {
+    await stakeToken.connect(staker1).approve(staking.address, twoTokens);
+    await stakeToken.connect(staker2).approve(staking.address, twoTokens);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).stake(oneToken);
+    await staking.connect(staker2).stake(oneToken);
+    await setAutoMine(true);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, twoTokens);
+    await staking.connect(rewardDistributer).notifyRewardAmount(twoTokens);
+
+    // Make the first reward period end for sure
+    await increaseTime(rewardsDuration + 100);
+
+    const rewardBalance1First = await staking.earned(staker1.address);
+    const rewardBalance2First = await staking.earned(staker2.address);
+
+    await rewardToken
+      .connect(rewardDistributer)
+      .transfer(staking.address, oneToken);
+    await staking.connect(rewardDistributer).notifyRewardAmount(oneToken);
+
+    // Proceed with second reward period for some time
+    await increaseTime(rewardsDuration / 2);
+
+    await setAutoMine(false);
+    await staking.connect(staker1).exit();
+    await staking.connect(staker2).exit();
+    await setAutoMine(true);
+
+    const rewardBalance1Second = await rewardToken.balanceOf(staker1.address);
+    const rewardBalance2Second = await rewardToken.balanceOf(staker2.address);
+
+    expect(rewardBalance1First).to.eq(rewardBalance2First);
+    expect(rewardBalance1First).to.be.gt(0);
+    expect(rewardBalance1Second).to.eq(rewardBalance2Second);
+    expect(rewardBalance1Second).to.be.gt(0);
+  });
+
+  const increaseTime = async (seconds: number) => {
+    await network.provider.send("evm_increaseTime", [seconds]);
+    await network.provider.send("evm_mine");
+  };
+
+  const setAutoMine = async (on: boolean) => {
+    await network.provider.send("evm_setAutomine", [on]);
+    if (on) {
+      await network.provider.send("evm_mine");
+    }
+  };
+
+  /*   const atomicTrans = async (trans: (() => void)[]) => {
+    await network.provider.send("evm_setAutomine", [false]);
+    trans.forEach(async (t) => {
+      await t();
+    });
+    await network.provider.send("evm_setAutomine", [true]);
+  }; */
   /* 
   it("Single user, multiple stakes gives all rewards", async function () {
     await stakeToken.approve(staking.address, twoTokens);
