@@ -408,7 +408,7 @@ describe("Staking", function () {
       .transfer(staking.address, oneToken);
     await staking.connect(rewardDistributer).notifyRewardAmount(oneToken);
 
-    // Proceed with second reward period for some time
+    // Proceed with second reward period for some time (half period)
     await increaseTime(rewardsDuration / 2);
 
     await setAutoMine(false);
