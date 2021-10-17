@@ -39,6 +39,23 @@ contract StakingRewards is
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
 
+    HODLerNFT public _nftFirst;
+    HODLerNFT public _nftSecond;
+    HODLerNFT public _nftThird;
+    NFTLimit public nftLimitsFirst;
+    NFTLimit public nftLimitsSecond;
+    NFTLimit public nftLimitsThird;
+    mapping(address => uint256) public stakerFirstNFTThreshholdTimestamp;
+    mapping(address => uint256) public stakerSecondNFTThreshholdTimestamp;
+    mapping(address => uint256) public stakerThirdNFTThreshholdTimestamp;
+
+    struct NFTLimit {
+        uint256 amount;
+        uint256 duration;
+    }
+
+    bool private nftAddressesSet = false;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -103,6 +120,7 @@ contract StakingRewards is
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
+        storeNFTValidities();
         emit Staked(msg.sender, amount);
     }
 
@@ -115,6 +133,7 @@ contract StakingRewards is
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
         stakingToken.safeTransfer(msg.sender, amount);
+        storeNFTValidities();
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -133,7 +152,56 @@ contract StakingRewards is
         getReward();
     }
 
+    function storeNFTValidities() internal {
+        if (
+            nftLimitsFirst.amount <= _balances[msg.sender] &&
+            stakerFirstNFTThreshholdTimestamp[msg.sender] == 0
+        ) {
+            stakerFirstNFTThreshholdTimestamp[msg.sender] = block.timestamp;
+        }
+        if (nftLimitsFirst.amount > _balances[msg.sender]) {
+            stakerFirstNFTThreshholdTimestamp[msg.sender] = 0;
+        }
+
+        if (
+            nftLimitsSecond.amount <= _balances[msg.sender] &&
+            stakerSecondNFTThreshholdTimestamp[msg.sender] == 0
+        ) {
+            stakerSecondNFTThreshholdTimestamp[msg.sender] = block.timestamp;
+        }
+        if (nftLimitsSecond.amount > _balances[msg.sender]) {
+            stakerSecondNFTThreshholdTimestamp[msg.sender] = 0;
+        }
+
+        if (
+            nftLimitsThird.amount <= _balances[msg.sender] &&
+            stakerThirdNFTThreshholdTimestamp[msg.sender] == 0
+        ) {
+            stakerThirdNFTThreshholdTimestamp[msg.sender] = block.timestamp;
+        }
+        if (nftLimitsThird.amount > _balances[msg.sender]) {
+            stakerThirdNFTThreshholdTimestamp[msg.sender] = 0;
+        }
+    }
+
     /* ========== RESTRICTED FUNCTIONS ========== */
+
+    function setNFTAddresses(
+        address nftFirst,
+        address nftSecond,
+        address nftThird
+    ) public onlyOwner {
+        require(!nftAddressesSet, "You can only set addresses once");
+        _nftFirst = HODLerNFT(nftFirst);
+        _nftSecond = HODLerNFT(nftSecond);
+        _nftThird = HODLerNFT(nftThird);
+
+        nftAddressesSet = true;
+
+        nftLimitsFirst = NFTLimit(10e18, 10);
+        nftLimitsSecond = NFTLimit(10e19, 100);
+        nftLimitsThird = NFTLimit(10e20, 1000);
+    }
 
     function notifyRewardAmount()
         external
