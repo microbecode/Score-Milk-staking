@@ -1,10 +1,14 @@
 pragma solidity ^0.5.0;
 
+import "../token/ERC20/ERC20Detailed.sol";
 import "../token/ERC20/ERC20.sol";
 
 // mock class using ERC20
-contract ERC20Mock is ERC20 {
-    constructor(address initialAccount, uint256 initialBalance) public {
+contract ERC20Mock is ERC20Detailed, ERC20 {
+    constructor(address initialAccount, uint256 initialBalance)
+        public
+        ERC20Detailed("name", "symbol", 6)
+    {
         _mint(initialAccount, initialBalance);
     }
 
