@@ -277,6 +277,24 @@ describe("Staking", function () {
     );
   });
 
+  it("Single staking retains reward after staking period", async function () {
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, twoTokens, { gasPrice: 0 });
+    await staking.connect(staker1).stake(oneToken, { gasPrice: 0 });
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await increaseTime(rewardsDuration * 3);
+    const earnedFirst = await staking.earned(staker1.address);
+    await increaseTime(rewardsDuration);
+    const earnedSecond = await staking.earned(staker1.address);
+
+    expect(earnedFirst).to.eq(earnedSecond);
+    expect(earnedFirst).to.be.gt(0);
+  });
+
   it("Single user, multiple stakes gives all rewards", async function () {
     await stakeToken
       .connect(staker1)
