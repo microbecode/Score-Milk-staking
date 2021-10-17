@@ -12,7 +12,9 @@ import "./Pausable.sol";
 import "./token/ERC20/IERC20.sol";
 import "./math/SafeMath.sol";
 import "hardhat/console.sol";
-import "./HODLerNFT.sol";
+import "./NFTFirst.sol";
+import "./NFTSecond.sol";
+import "./NFTThird.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/stakingrewards
 contract StakingRewards is
@@ -39,9 +41,9 @@ contract StakingRewards is
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
 
-    HODLerNFT public _nftFirst;
-    HODLerNFT public _nftSecond;
-    HODLerNFT public _nftThird;
+    NFTFirst public _nftFirst;
+    NFTSecond public _nftSecond;
+    NFTThird public _nftThird;
     NFTLimit public nftLimitsFirst;
     NFTLimit public nftLimitsSecond;
     NFTLimit public nftLimitsThird;
@@ -216,7 +218,7 @@ contract StakingRewards is
             block.timestamp - stakerThirdNFTThreshholdTimestamp[msg.sender] >
             nftLimitsThird.duration
         ) {
-            _nftSecond.mint(msg.sender);
+            _nftThird.mint(msg.sender);
             stakerThirdNFTThreshholdTimestamp[msg.sender] = MAX_INT;
         }
     }
@@ -229,9 +231,9 @@ contract StakingRewards is
         address nftThird
     ) public onlyOwner {
         require(!nftAddressesSet, "You can only set addresses once");
-        _nftFirst = HODLerNFT(nftFirst);
-        _nftSecond = HODLerNFT(nftSecond);
-        _nftThird = HODLerNFT(nftThird);
+        _nftFirst = NFTFirst(nftFirst);
+        _nftSecond = NFTSecond(nftSecond);
+        _nftThird = NFTThird(nftThird);
 
         nftAddressesSet = true;
 

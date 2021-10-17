@@ -3,7 +3,8 @@ pragma solidity ^0.5.0;
 import "./token/ERC20/IERC20.sol";
 import "./math/SafeMath.sol";
 import "hardhat/console.sol";
-import "./HODLerNFT.sol";
+
+/* import "./HODLerNFT.sol"; */
 
 contract Staking {
     using SafeMath for uint256;
@@ -14,9 +15,9 @@ contract Staking {
     mapping(address => uint256) private _stakingStarts; */
     mapping(address => Stake) private _stakes;
 
-    HODLerNFT public _nft1;
+    /*   HODLerNFT public _nft1;
     HODLerNFT public _nft2;
-    HODLerNFT public _nft3;
+    HODLerNFT public _nft3; */
 
     bool private nftAddressesSet = false;
 
@@ -38,7 +39,7 @@ contract Staking {
         //console.log("I got money %s", address(this).balance);
     }
 
-    function setNFTAddresses(
+    /*   function setNFTAddresses(
         address nft1,
         address nft2,
         address nft3
@@ -53,7 +54,7 @@ contract Staking {
 
     function mint() public {
         _nft1.mint(msg.sender);
-    }
+    } */
 
     function stake(uint256 amount) public {
         require(amount > 0, "Cannot stake 0");
