@@ -7,6 +7,7 @@ import "./utils/ReentrancyGuard.sol";
 // Inheritance
 import "./interfaces/IStakingRewards.sol";
 import "./RewardsDistributionRecipient.sol";
+import "./Pausable.sol";
 
 import "./token/ERC20/IERC20.sol";
 import "./math/SafeMath.sol";
@@ -17,7 +18,8 @@ import "./HODLerNFT.sol";
 contract StakingRewards is
     IStakingRewards,
     RewardsDistributionRecipient,
-    ReentrancyGuard
+    ReentrancyGuard,
+    Pausable
 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -43,12 +45,9 @@ contract StakingRewards is
         address _owner,
         address _rewardsDistribution,
         address _stakingToken
-    ) public Ownable() {
+    ) public Owned(_owner) {
         stakingToken = IERC20(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
-        if (_owner != msg.sender) {
-            transferOwnership(_owner);
-        }
     }
 
     /* ========== VIEWS ========== */
@@ -97,7 +96,7 @@ contract StakingRewards is
     function stake(uint256 amount)
         external
         nonReentrant
-        //notPaused
+        notPaused
         updateReward(msg.sender)
     {
         require(amount > 0, "Cannot stake 0");
@@ -123,9 +122,8 @@ contract StakingRewards is
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            /*        rewardsToken.safeTransfer(msg.sender, reward); */
             (bool success, ) = msg.sender.call.value(reward)("");
-            require(success, "Transfer failed");
+            require(success, "Reward transfer failed");
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -156,11 +154,11 @@ contract StakingRewards is
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        /*         uint256 balance = rewardsToken.balanceOf(address(this));
+        uint256 balance = address(this).balance;
         require(
             rewardRate <= balance.div(rewardsDuration),
             "Provided reward too high"
-        ); */
+        );
 
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
@@ -176,7 +174,7 @@ contract StakingRewards is
             tokenAddress != address(stakingToken),
             "Cannot withdraw the staking token"
         );
-        IERC20(tokenAddress).safeTransfer(owner(), tokenAmount);
+        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
 

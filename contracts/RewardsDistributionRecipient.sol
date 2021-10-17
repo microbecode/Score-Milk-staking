@@ -1,10 +1,10 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.10;
 
 // Inheritance
-import "./ownership/Ownable.sol";
+import "./Owned.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/rewardsdistributionrecipient
-contract RewardsDistributionRecipient is Ownable {
+contract RewardsDistributionRecipient is Owned {
     address public rewardsDistribution;
 
     function notifyRewardAmount() external payable;
