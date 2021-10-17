@@ -55,6 +55,7 @@ contract StakingRewards is
     }
 
     bool private nftAddressesSet = false;
+    uint256 private MAX_INT = 2**256 - 1;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -120,7 +121,7 @@ contract StakingRewards is
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
-        storeNFTValidities();
+        updateNFTEligibility();
         emit Staked(msg.sender, amount);
     }
 
@@ -133,7 +134,7 @@ contract StakingRewards is
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
         stakingToken.safeTransfer(msg.sender, amount);
-        storeNFTValidities();
+        updateNFTEligibility();
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -152,14 +153,17 @@ contract StakingRewards is
         getReward();
     }
 
-    function storeNFTValidities() internal {
+    function updateNFTEligibility() internal {
         if (
             nftLimitsFirst.amount <= _balances[msg.sender] &&
             stakerFirstNFTThreshholdTimestamp[msg.sender] == 0
         ) {
             stakerFirstNFTThreshholdTimestamp[msg.sender] = block.timestamp;
         }
-        if (nftLimitsFirst.amount > _balances[msg.sender]) {
+        if (
+            nftLimitsFirst.amount > _balances[msg.sender] &&
+            stakerFirstNFTThreshholdTimestamp[msg.sender] != MAX_INT
+        ) {
             stakerFirstNFTThreshholdTimestamp[msg.sender] = 0;
         }
 
@@ -169,7 +173,10 @@ contract StakingRewards is
         ) {
             stakerSecondNFTThreshholdTimestamp[msg.sender] = block.timestamp;
         }
-        if (nftLimitsSecond.amount > _balances[msg.sender]) {
+        if (
+            nftLimitsSecond.amount > _balances[msg.sender] &&
+            stakerSecondNFTThreshholdTimestamp[msg.sender] != MAX_INT
+        ) {
             stakerSecondNFTThreshholdTimestamp[msg.sender] = 0;
         }
 
@@ -179,8 +186,38 @@ contract StakingRewards is
         ) {
             stakerThirdNFTThreshholdTimestamp[msg.sender] = block.timestamp;
         }
-        if (nftLimitsThird.amount > _balances[msg.sender]) {
+        if (
+            nftLimitsThird.amount > _balances[msg.sender] &&
+            stakerThirdNFTThreshholdTimestamp[msg.sender] != MAX_INT
+        ) {
             stakerThirdNFTThreshholdTimestamp[msg.sender] = 0;
+        }
+    }
+
+    function getNFT() public {
+        if (
+            stakerFirstNFTThreshholdTimestamp[msg.sender] > 0 &&
+            block.timestamp - stakerFirstNFTThreshholdTimestamp[msg.sender] >
+            nftLimitsFirst.duration
+        ) {
+            _nftFirst.mint(msg.sender);
+            stakerFirstNFTThreshholdTimestamp[msg.sender] = MAX_INT;
+        }
+        if (
+            stakerSecondNFTThreshholdTimestamp[msg.sender] > 0 &&
+            block.timestamp - stakerSecondNFTThreshholdTimestamp[msg.sender] >
+            nftLimitsSecond.duration
+        ) {
+            _nftSecond.mint(msg.sender);
+            stakerSecondNFTThreshholdTimestamp[msg.sender] = MAX_INT;
+        }
+        if (
+            stakerThirdNFTThreshholdTimestamp[msg.sender] > 0 &&
+            block.timestamp - stakerThirdNFTThreshholdTimestamp[msg.sender] >
+            nftLimitsThird.duration
+        ) {
+            _nftSecond.mint(msg.sender);
+            stakerThirdNFTThreshholdTimestamp[msg.sender] = MAX_INT;
         }
     }
 
