@@ -10,16 +10,16 @@ contract MyNFT is ERC721Metadata {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    address internal _stakingContr;
+    address internal _minterContract;
 
     string[] internal _hashes;
 
     constructor(
-        address stakingContr,
+        address minterContract,
         string memory name,
         string memory symbol
     ) public ERC721Metadata(name, symbol) {
-        _stakingContr = stakingContr;
+        _minterContract = minterContract;
         _setBaseURI("http://blah/");
 
         setHashes();
@@ -28,7 +28,10 @@ contract MyNFT is ERC721Metadata {
     function setHashes() internal;
 
     function mint(address receiver) public {
-        require(msg.sender == _stakingContr, "Only staking contract can mint");
+        require(
+            msg.sender == _minterContract,
+            "Only minting contract can mint"
+        );
 
         _tokenIds.increment();
 
