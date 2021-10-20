@@ -41,23 +41,10 @@ contract StakingRewards is
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
 
-    NFTFirst public _nftFirst;
-    NFTSecond public _nftSecond;
-    NFTThird public _nftThird;
-    NFTLimit public nftLimitsFirst;
-    NFTLimit public nftLimitsSecond;
-    NFTLimit public nftLimitsThird;
-    mapping(address => uint256) public stakerFirstNFTThreshholdTimestamp;
-    mapping(address => uint256) public stakerSecondNFTThreshholdTimestamp;
-    mapping(address => uint256) public stakerThirdNFTThreshholdTimestamp;
-
-    struct NFTLimit {
-        uint256 amount;
-        uint256 duration;
+    struct StakingAction {
+        int256 amount;
+        uint256 timestamp;
     }
-
-    bool private nftAddressesSet = false;
-    uint256 private MAX_INT = 2**256 - 1;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -111,6 +98,49 @@ contract StakingRewards is
         return rewardRate.mul(rewardsDuration);
     }
 
+    //uint256 private MAX_UINT = 2**256 - 1;
+
+    function checkMilestoneEligibility(
+        address staker,
+        uint256 amount,
+        uint256 duration
+    ) public view returns (bool) {
+        int256 currentStake = 0;
+        uint256 milestoneAmountHeldFrom = 0;
+        /*
++50, 500
+-40, 700
++100 1000
+        */
+        for (uint256 i = 0; i < stakingActions[staker].length; i++) {
+            if (
+                milestoneAmountHeldFrom > 0 &&
+                stakingActions[staker][i].timestamp - milestoneAmountHeldFrom >=
+                duration
+            ) {
+                return true;
+            }
+
+            currentStake += stakingActions[staker][i].amount;
+
+            if (currentStake >= int256(amount)) {
+                if (milestoneAmountHeldFrom == 0) {
+                    milestoneAmountHeldFrom = stakingActions[staker][i]
+                        .timestamp;
+                }
+            } else {
+                milestoneAmountHeldFrom = 0;
+            }
+        }
+        if (
+            milestoneAmountHeldFrom > 0 &&
+            block.timestamp - milestoneAmountHeldFrom >= duration
+        ) {
+            return true;
+        }
+        return false;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function stake(uint256 amount)
@@ -123,7 +153,7 @@ contract StakingRewards is
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
-        updateNFTEligibility();
+        addStakingAction(int256(amount));
         emit Staked(msg.sender, amount);
     }
 
@@ -136,7 +166,7 @@ contract StakingRewards is
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
         stakingToken.safeTransfer(msg.sender, amount);
-        updateNFTEligibility();
+        addStakingAction(int256(-amount));
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -155,92 +185,15 @@ contract StakingRewards is
         getReward();
     }
 
-    function updateNFTEligibility() internal {
-        if (
-            nftLimitsFirst.amount <= _balances[msg.sender] &&
-            stakerFirstNFTThreshholdTimestamp[msg.sender] == 0
-        ) {
-            stakerFirstNFTThreshholdTimestamp[msg.sender] = block.timestamp;
-        }
-        if (
-            nftLimitsFirst.amount > _balances[msg.sender] &&
-            stakerFirstNFTThreshholdTimestamp[msg.sender] != MAX_INT
-        ) {
-            stakerFirstNFTThreshholdTimestamp[msg.sender] = 0;
-        }
+    mapping(address => StakingAction[]) public stakingActions;
 
-        if (
-            nftLimitsSecond.amount <= _balances[msg.sender] &&
-            stakerSecondNFTThreshholdTimestamp[msg.sender] == 0
-        ) {
-            stakerSecondNFTThreshholdTimestamp[msg.sender] = block.timestamp;
-        }
-        if (
-            nftLimitsSecond.amount > _balances[msg.sender] &&
-            stakerSecondNFTThreshholdTimestamp[msg.sender] != MAX_INT
-        ) {
-            stakerSecondNFTThreshholdTimestamp[msg.sender] = 0;
-        }
-
-        if (
-            nftLimitsThird.amount <= _balances[msg.sender] &&
-            stakerThirdNFTThreshholdTimestamp[msg.sender] == 0
-        ) {
-            stakerThirdNFTThreshholdTimestamp[msg.sender] = block.timestamp;
-        }
-        if (
-            nftLimitsThird.amount > _balances[msg.sender] &&
-            stakerThirdNFTThreshholdTimestamp[msg.sender] != MAX_INT
-        ) {
-            stakerThirdNFTThreshholdTimestamp[msg.sender] = 0;
-        }
-    }
-
-    function getNFT() public {
-        if (
-            stakerFirstNFTThreshholdTimestamp[msg.sender] > 0 &&
-            block.timestamp - stakerFirstNFTThreshholdTimestamp[msg.sender] >
-            nftLimitsFirst.duration
-        ) {
-            _nftFirst.mint(msg.sender);
-            stakerFirstNFTThreshholdTimestamp[msg.sender] = MAX_INT;
-        }
-        if (
-            stakerSecondNFTThreshholdTimestamp[msg.sender] > 0 &&
-            block.timestamp - stakerSecondNFTThreshholdTimestamp[msg.sender] >
-            nftLimitsSecond.duration
-        ) {
-            _nftSecond.mint(msg.sender);
-            stakerSecondNFTThreshholdTimestamp[msg.sender] = MAX_INT;
-        }
-        if (
-            stakerThirdNFTThreshholdTimestamp[msg.sender] > 0 &&
-            block.timestamp - stakerThirdNFTThreshholdTimestamp[msg.sender] >
-            nftLimitsThird.duration
-        ) {
-            _nftThird.mint(msg.sender);
-            stakerThirdNFTThreshholdTimestamp[msg.sender] = MAX_INT;
-        }
+    function addStakingAction(int256 amount) internal {
+        stakingActions[msg.sender].push(
+            StakingAction(int256(amount), block.timestamp)
+        );
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
-    function setNFTAddresses(
-        address nftFirst,
-        address nftSecond,
-        address nftThird
-    ) public onlyOwner {
-        require(!nftAddressesSet, "You can only set addresses once");
-        _nftFirst = NFTFirst(nftFirst);
-        _nftSecond = NFTSecond(nftSecond);
-        _nftThird = NFTThird(nftThird);
-
-        nftAddressesSet = true;
-
-        nftLimitsFirst = NFTLimit(10e18, 10);
-        nftLimitsSecond = NFTLimit(10e19, 100);
-        nftLimitsThird = NFTLimit(10e20, 1000);
-    }
 
     function notifyRewardAmount()
         external

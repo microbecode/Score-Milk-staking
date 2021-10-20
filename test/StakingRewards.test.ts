@@ -5,71 +5,6 @@ import { expect } from "chai";
 //import { deployContract } from "waffle";
 require("@nomiclabs/hardhat-waffle");
 
-describe("Reward calculation", function () {
-  /* let accounts: SignerWithAddress[];
-  let staking: Contract;
-  let stakeToken: Contract;
-  let owner: SignerWithAddress;
-  const hour = ethers.BigNumber.from("3600");
-  const one = ethers.BigNumber.from("1");
-  const ten = ethers.BigNumber.from("10");
-  const thousand = ethers.BigNumber.from("1000");
-  const tenThousand = ethers.BigNumber.from("10000");
-  const hundredThousand = ethers.BigNumber.from("100000");
-  const zero = ethers.BigNumber.from("0");
-
-  const twentyTokens = ethers.utils.parseUnits("20", 18);
-  const stakeTokenstotal = twentyTokens;
-
-  beforeEach(async function () {
-    accounts = await ethers.getSigners();
-    owner = accounts[0];
-
-    const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
-    stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
-    await stakeToken.deployed();
-
-    const stakingFact = await ethers.getContractFactory("Staking");
-    staking = await stakingFact.deploy(stakeToken.address);
-    await staking.deployed();
-  });
-
-   it("One hour gives one reward", async function () {
-    const reward = await staking.getRewardAmountForMoment(0, hour, 1000, 1000);
-    expect(reward).to.equal(one);
-  });
-
-  it("Less than an hour gives no reward", async function () {
-    console.log("hmmm", hour.sub(one).toString());
-    const reward = await staking.getRewardAmountForMoment(
-      0,
-      hour.sub(one),
-      1000,
-      1000
-    );
-    expect(reward).to.equal(zero);
-
-    // Try with bigger stake
-    const reward2 = await staking.getRewardAmountForMoment(
-      0,
-      hour.sub(one),
-      1000000,
-      1000000
-    );
-    expect(reward2).to.equal(zero);
-  });
-
-  it("One hour gives reward relative to the total stakes", async function () {
-    const reward = await staking.getRewardAmountForMoment(
-      0,
-      hour,
-      10000,
-      100000
-    );
-    expect(reward).to.equal(one);
-  });  */
-});
-
 describe("NFT functionality", function () {
   /*  let accounts: SignerWithAddress[];
   let staking: Contract;
@@ -119,6 +54,192 @@ describe("NFT functionality", function () {
     expect(url2).to.equal(baseUrl + "b");
     expect(url3).to.equal(baseUrl + "a");
   }); */
+});
+
+interface NFTLimit {
+  amount: number;
+  duration: number;
+}
+
+describe("Milestone eligibility", function () {
+  let accounts: SignerWithAddress[];
+  let staking: Contract;
+  let stakeToken: Contract;
+  let owner: SignerWithAddress;
+  let staker1: SignerWithAddress;
+  let staker2: SignerWithAddress;
+  let rewardDistributer: SignerWithAddress;
+  const oneToken = ethers.utils.parseUnits("1", 18);
+  const twoTokens = ethers.utils.parseUnits("2", 18);
+  const twentyTokens = ethers.utils.parseUnits("20", 18);
+  const thousandTokens = ethers.utils.parseUnits("1000", 18);
+  const zero = ethers.BigNumber.from("0") as BigNumber;
+  const justAboveZero = ethers.BigNumber.from("1");
+  const rewardsDuration = 60 * 60 * 24 * 7; // 7 days
+
+  beforeEach(async function () {
+    accounts = await ethers.getSigners();
+    owner = accounts[0];
+    staker1 = accounts[1];
+    staker2 = accounts[2];
+    rewardDistributer = accounts[4];
+
+    const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
+    stakeToken = await stakeTokenFact.deploy(owner.address, thousandTokens);
+    await stakeToken.deployed();
+
+    stakeToken.transfer(staker1.address, twentyTokens);
+    stakeToken.transfer(staker2.address, twentyTokens);
+
+    const stakingFact = await ethers.getContractFactory("StakingRewards");
+    staking = await stakingFact.deploy(
+      owner.address,
+      rewardDistributer.address,
+      stakeToken.address
+    );
+    await staking.deployed();
+  });
+
+  const expectMilestone = async (
+    addr: string,
+    amount: Number,
+    duration: number,
+    shouldBeEligible: boolean
+  ) => {
+    const eligible = await staking.checkMilestoneEligibility(
+      addr,
+      amount,
+      duration
+    );
+    expect(eligible).to.equal(shouldBeEligible);
+  };
+
+  it("No stake, no milestone", async function () {
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await increaseTime(rewardsDuration * 3);
+
+    await expectMilestone(staker1.address, 0, 0, false);
+    await expectMilestone(staker1.address, 1, 0, false);
+    await expectMilestone(staker1.address, 0, 2, false);
+    await expectMilestone(staker1.address, 1, 2, false);
+  });
+
+  it("Single stake, check durations", async function () {
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, 5, { gasPrice: 0 });
+    await staking.connect(staker1).stake(5, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 1, 0, true);
+    await expectMilestone(staker1.address, 1, 500, false);
+
+    await increaseTime(100);
+
+    await expectMilestone(staker1.address, 1, 50, true);
+
+    await increaseTime(200);
+
+    await expectMilestone(staker1.address, 1, 50, true);
+    await expectMilestone(staker1.address, 1, 500, false);
+
+    await increaseTime(300);
+
+    await expectMilestone(staker1.address, 1, 500, true);
+  });
+
+  it("Only adding stake, check amounts", async function () {
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await expectMilestone(staker1.address, 1, 0, false);
+
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, 50, { gasPrice: 0 });
+    await staking.connect(staker1).stake(5, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 1, 0, true);
+    await expectMilestone(staker1.address, 10, 0, false);
+
+    await increaseTime(100);
+
+    await expectMilestone(staker1.address, 1, 0, true);
+    await expectMilestone(staker1.address, 10, 0, false);
+
+    await staking.connect(staker1).stake(5, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 10, 0, true);
+    await expectMilestone(staker1.address, 20, 0, false);
+
+    await staking.connect(staker1).stake(10, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 15, 0, true);
+  });
+
+  it("Only adding, check combinations", async function () {
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, 500, { gasPrice: 0 });
+    await staking.connect(staker1).stake(5, { gasPrice: 0 });
+
+    await increaseTime(100);
+
+    await expectMilestone(staker1.address, 1, 0, true);
+    await expectMilestone(staker1.address, 1, 500, false);
+    await expectMilestone(staker1.address, 10, 50, false);
+
+    await staking.connect(staker1).stake(5, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 1, 500, false);
+    await expectMilestone(staker1.address, 10, 50, false);
+
+    await increaseTime(600);
+
+    await expectMilestone(staker1.address, 10, 500, true);
+
+    await staking.connect(staker1).stake(5, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 15, 100, false);
+
+    await increaseTime(150);
+
+    await expectMilestone(staker1.address, 15, 100, true);
+  });
+
+  it("Adding and removing", async function () {
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, 500, { gasPrice: 0 });
+
+    await staking.connect(staker1).stake(50, { gasPrice: 0 });
+
+    await increaseTime(100);
+
+    await staking.connect(staker1).withdraw(40, { gasPrice: 0 });
+
+    await expectMilestone(staker1.address, 50, 0, true);
+    await expectMilestone(staker1.address, 50, 80, true);
+    await expectMilestone(staker1.address, 10, 150, false);
+
+    await increaseTime(100);
+    await expectMilestone(staker1.address, 10, 150, true);
+  });
 });
 
 describe("Staking", function () {
@@ -176,7 +297,7 @@ describe("Staking", function () {
       value: initialNativeBalance,
     }); */
   });
-
+  /* 
   it("initial data is correct", async function () {
     await expectInitial();
   });
@@ -454,13 +575,8 @@ describe("Staking", function () {
       .connect(rewardDistributer)
       .notifyRewardAmount({ value: oneToken });
 
-    // Proceed with second reward period for some time (half period)
+    // Proceed with second reward period for some time
     await increaseTime(rewardsDuration / 2);
-
-    /*     await setAutoMine(false);
-    await staking.connect(staker1).exit({ gasPrice: 0 });
-    await staking.connect(staker2).exit({ gasPrice: 0 });
-    await setAutoMine(true); */
 
     const rewardBalance1Second = await staking.earned(staker1.address);
     const rewardBalance2Second = await staking.earned(staker2.address);
@@ -469,24 +585,16 @@ describe("Staking", function () {
     expect(rewardBalance1First).to.be.gt(0);
     expect(rewardBalance1Second).to.eq(rewardBalance2Second);
     expect(rewardBalance1Second).to.be.gt(0);
-
-    /*     expect(rewardBalance1First).to.eq(rewardBalance2First);
-    expect(rewardBalance1First).to.be.gt(0);
-    expect(rewardBalance1Second).to.eq(rewardBalance2Second);
-    expect(rewardBalance1Second).to.be.gt(0); */
   });
 
-  const increaseTime = async (seconds: number) => {
-    await network.provider.send("evm_increaseTime", [seconds]);
-    await network.provider.send("evm_mine");
-  };
+
 
   const setAutoMine = async (on: boolean) => {
     await network.provider.send("evm_setAutomine", [on]);
     if (on) {
       await network.provider.send("evm_mine");
     }
-  };
+  }; */
 
   /*   const atomicTrans = async (trans: (() => void)[]) => {
     await network.provider.send("evm_setAutomine", [false]);
@@ -496,3 +604,8 @@ describe("Staking", function () {
     await network.provider.send("evm_setAutomine", [true]);
   }; */
 });
+
+const increaseTime = async (seconds: number) => {
+  await network.provider.send("evm_increaseTime", [seconds]);
+  await network.provider.send("evm_mine");
+};
