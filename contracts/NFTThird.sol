@@ -4,9 +4,9 @@ import "./MyNFT.sol";
 import "hardhat/console.sol";
 
 contract NFTThird is MyNFT {
-    constructor(address stakingContr)
+    constructor(address minterContract)
         public
-        MyNFT(stakingContr, "third", "third")
+        MyNFT(minterContract, "third", "third")
     {}
 
     function setHashes() internal {
