@@ -46,6 +46,8 @@ contract StakingRewards is
         uint256 timestamp;
     }
 
+    mapping(address => StakingAction[]) public stakingActions;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -98,8 +100,6 @@ contract StakingRewards is
         return rewardRate.mul(rewardsDuration);
     }
 
-    //uint256 private MAX_UINT = 2**256 - 1;
-
     function checkMilestoneEligibility(
         address staker,
         uint256 amount,
@@ -107,24 +107,23 @@ contract StakingRewards is
     ) public view returns (bool) {
         int256 currentStake = 0;
         uint256 milestoneAmountHeldFrom = 0;
-        /*
-+50, 500
--40, 700
-+100 1000
-        */
+
         for (uint256 i = 0; i < stakingActions[staker].length; i++) {
             if (
                 milestoneAmountHeldFrom > 0 &&
                 stakingActions[staker][i].timestamp - milestoneAmountHeldFrom >=
                 duration
             ) {
+                // If we are eligible based on the newest action's timestamp
                 return true;
             }
 
             currentStake += stakingActions[staker][i].amount;
 
             if (currentStake >= int256(amount)) {
+                // If we're above the threshold
                 if (milestoneAmountHeldFrom == 0) {
+                    // If timestamp not set yet
                     milestoneAmountHeldFrom = stakingActions[staker][i]
                         .timestamp;
                 }
@@ -132,6 +131,7 @@ contract StakingRewards is
                 milestoneAmountHeldFrom = 0;
             }
         }
+        // Check eligibility after the last entry
         if (
             milestoneAmountHeldFrom > 0 &&
             block.timestamp - milestoneAmountHeldFrom >= duration
@@ -184,8 +184,6 @@ contract StakingRewards is
         withdraw(_balances[msg.sender]);
         getReward();
     }
-
-    mapping(address => StakingAction[]) public stakingActions;
 
     function addStakingAction(int256 amount) internal {
         stakingActions[msg.sender].push(
