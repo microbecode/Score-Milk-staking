@@ -54,6 +54,14 @@ describe("Minter", function () {
     await expect(nftThird.ownerOf(1)).to.be.revertedWith(
       "ERC721: owner query for nonexistent token"
     );
+
+    expect(await minter.tier1NFTReceived(staker1.address)).to.equal(false);
+    expect(await minter.tier2NFTReceived(staker1.address)).to.equal(false);
+    expect(await minter.tier3NFTReceived(staker1.address)).to.equal(false);
+
+    expect(await minter.tier1Whitelist(staker1.address)).to.equal(false);
+    expect(await minter.tier2Whitelist(staker1.address)).to.equal(false);
+    expect(await minter.tier3Whitelist(staker1.address)).to.equal(false);
   };
 
   it("Initial check", async function () {
@@ -70,6 +78,22 @@ describe("Minter", function () {
     await expect(
       minter.connect(staker1).whitelist(1, owner.address)
     ).to.be.revertedWith("Only the contract owner may perform this action");
+
+    await expect(
+      nftFirst.connect(owner).mint(owner.address)
+    ).to.be.revertedWith("Only minting contract can mint");
+
+    await expect(
+      nftFirst.connect(staker1).mint(owner.address)
+    ).to.be.revertedWith("Only minting contract can mint");
+
+    await expect(
+      nftSecond.connect(staker1).mint(owner.address)
+    ).to.be.revertedWith("Only minting contract can mint");
+
+    await expect(
+      nftThird.connect(staker1).mint(owner.address)
+    ).to.be.revertedWith("Only minting contract can mint");
   });
 
   it("No claiming without whitelist", async function () {
@@ -127,6 +151,22 @@ describe("Minter", function () {
     expect(await nftThird.ownerOf(1)).to.equal(staker1.address);
   });
 
+  it("Saved as received", async function () {
+    await minter.whitelist(1, staker1.address);
+    await minter.whitelist(2, staker1.address);
+
+    await minter.connect(staker1).claimNFTs();
+
+    await minter.whitelist(3, staker1.address);
+    expect(await minter.tier1NFTReceived(staker1.address)).to.equal(true);
+    expect(await minter.tier2NFTReceived(staker1.address)).to.equal(true);
+    expect(await minter.tier3NFTReceived(staker1.address)).to.equal(false);
+
+    await minter.connect(staker1).claimNFTs();
+
+    expect(await minter.tier3NFTReceived(staker1.address)).to.equal(true);
+  });
+
   it("No double claiming", async function () {
     await minter.whitelist(1, staker1.address);
     await minter.connect(staker1).claimNFTs();
@@ -157,9 +197,29 @@ describe("Minter", function () {
       "ERC721: owner query for nonexistent token"
     );
   });
-});
 
-const increaseTime = async (seconds: number) => {
-  await network.provider.send("evm_increaseTime", [seconds]);
-  await network.provider.send("evm_mine");
-};
+  it("Multiple claimers", async function () {
+    await minter.whitelist(1, staker1.address);
+    await minter.whitelist(3, staker2.address);
+
+    await minter.connect(staker1).claimNFTs();
+    await minter.connect(staker2).claimNFTs();
+
+    await minter.whitelist(3, staker1.address);
+    await minter.connect(staker1).claimNFTs();
+
+    expect(await nftFirst.ownerOf(1)).to.equal(staker1.address);
+    expect(await nftThird.ownerOf(1)).to.equal(staker2.address);
+    expect(await nftThird.ownerOf(2)).to.equal(staker1.address);
+
+    await expect(nftFirst.ownerOf(2)).to.be.revertedWith(
+      "ERC721: owner query for nonexistent token"
+    );
+    await expect(nftSecond.ownerOf(1)).to.be.revertedWith(
+      "ERC721: owner query for nonexistent token"
+    );
+    await expect(nftThird.ownerOf(3)).to.be.revertedWith(
+      "ERC721: owner query for nonexistent token"
+    );
+  });
+});
