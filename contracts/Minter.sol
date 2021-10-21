@@ -1,15 +1,11 @@
 pragma solidity ^0.5.0;
 
-import "./math/SafeMath.sol";
-import "hardhat/console.sol";
 import "./NFTFirst.sol";
 import "./NFTSecond.sol";
 import "./NFTThird.sol";
 import "./Owned.sol";
 
 contract Minter is Owned {
-    using SafeMath for uint256;
-
     NFTFirst public _nftFirst;
     NFTSecond public _nftSecond;
     NFTThird public _nftThird;
