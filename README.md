@@ -1,42 +1,41 @@
-# Advanced Sample Hardhat Project
+# Score Milk staking project
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+This repository includes the codes for a staking platform project for Score Milk (https://scoremilk.com/).
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+## Contents
 
-Try running some of the following tasks:
+This project contains three contracts:
+* A staking contract (in file contracts/StakingRewards.sol)
+* A minter contract (in file contracts/Minter.sol)
+* A bunch of ERC-721 NFT contracts (in files contracts/NFT*.sol)
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.js
-node scripts/deploy.js
-npx eslint '**/*.js'
-npx eslint '**/*.js' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
-```
+## Technologies
 
-# Etherscan verification
+This repository is implemented with Solidity on top of an Ethereum framework. The actual deployment of the contracts will happen to the Tron network - the deployment settings in this repository will not be valid for Tron.
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
+### Used versions
+* Solidity 0.5.x for contracts
+* Hardhat for local execution and test environment
+* Chai/Mocha/Waffle/Ethers for unit tests
 
-In this project, copy the .env.template file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
+## Smart contracts
 
-```shell
-hardhat run --network ropsten scripts/deploy.js
-```
+The staking contract is based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract has been kept as close to the original as possible.
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
+The contracts are documented in more detail <a href='./contracts/README.md'>in the contracts folder</a>.
 
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
+## Deployment
+
+To deploy the contracts, you need to do the following things:
+1. Have your staking token ready
+1. Deploy the staking contract
+1. Deploy the minter contract
+1. Deploy the three NFT contracts
+1. Set the NFT addresses in the minter contract
+
+There is an example deployment script in *scripts/deploy.js*. If you have Hardhat installed, you can run it (locally) with: * npx hardhat run scripts/deploy.js --network hardhat*.
+
+## Verifying the contracts
+
+If the contracts need to be verified in some external service it's easiest to first create a flattened file of all of the contracts. This can be done with Hardhat: *npx hardhat flatten > flat.sol.txt* (not using the direct .sol suffix because it would cause conflicting contract names).
+
