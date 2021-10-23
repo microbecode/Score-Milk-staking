@@ -11,10 +11,6 @@ import "./Pausable.sol";
 
 import "./token/ERC20/IERC20.sol";
 import "./math/SafeMath.sol";
-import "hardhat/console.sol";
-import "./NFTFirst.sol";
-import "./NFTSecond.sol";
-import "./NFTThird.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/stakingrewards
 contract StakingRewards is

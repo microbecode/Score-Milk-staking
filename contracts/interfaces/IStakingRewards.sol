@@ -18,6 +18,12 @@ interface IStakingRewards {
 
     function totalSupply() external view returns (uint256);
 
+    function checkMilestoneEligibility(
+        address staker,
+        uint256 amount,
+        uint256 duration
+    ) external view returns (bool);
+
     // Mutative
 
     function exit() external;
