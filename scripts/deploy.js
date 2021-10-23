@@ -1,37 +1,41 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
 
-  const stakingFact = await hre.ethers.getContractFactory("StakingRewards");
-  const staking = await stakingFact.deploy("0x0ae55ce4a7762752193309cecb2a854ec5a27bc1", "0x0ae55ce4a7762752193309cecb2a854ec5a27bc1", "0x0ae55ce4a7762752193309cecb2a854ec5a27bc1"); // dummy address
+  const accounts = await hre.ethers.getSigners();
 
+  const tokenFact = await ethers.getContractFactory("ERC20Mock");
+  const token = await tokenFact.deploy(accounts[0].address, hre.ethers.utils.parseUnits("1000", 18));
+  await token.deployed();
+
+  const stakingFact = await ethers.getContractFactory("StakingRewards");
+  const staking = await stakingFact.deploy(accounts[0].address, accounts[0].address, token.address);
   await staking.deployed();
 
-  console.log("Staking deployed to:", staking.address);
+  const minterFact = await ethers.getContractFactory("Minter");
+  const minter = await minterFact.deploy(accounts[0].address);
+  await minter.deployed();
 
-  // We get the contract to deploy
-   const hodlerFact = await hre.ethers.getContractFactory("HODLerNFT");
-  const hodler = await hodlerFact.deploy(staking.address);
+  const nftFirstFact = await ethers.getContractFactory("NFTFirst");
+  const nftFirst = await nftFirstFact.deploy(minter.address);
+  await nftFirst.deployed();
 
-  await hodler.deployed();
+  const nftSecondFact = await ethers.getContractFactory("NFTSecond");
+  const nftSecond = await nftSecondFact.deploy(minter.address);
+  await nftSecond.deployed();
 
-  console.log("NFT deployed to:", hodler.address); 
+  const nftThirdFact = await ethers.getContractFactory("NFTThird");
+  const nftThird = await nftThirdFact.deploy(minter.address);
+  await nftThird.deployed();
 
-  // 
-/* await staking.setAddr(hodler.address);
-await staking.mint(); */
-  
+  await minter.setNFTAddresses(
+    nftFirst.address,
+    nftSecond.address,
+    nftThird.address
+  );
+
+  console.log("staking deployed to:", staking.address, "minter at:", minter.address); 
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
