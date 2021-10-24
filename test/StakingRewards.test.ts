@@ -5,55 +5,6 @@ import { expect } from "chai";
 //import { deployContract } from "waffle";
 require("@nomiclabs/hardhat-waffle");
 
-/* describe("NFT functionality", function () {
-  let accounts: SignerWithAddress[];
-  let staking: Contract;
-  let stakeToken: Contract;
-  let nft1: Contract;
-  let owner: SignerWithAddress;
-
-  const twentyTokens = ethers.utils.parseUnits("20", 18);
-  const stakeTokenstotal = twentyTokens;
-
-  const baseUrl = "http://blah/";
-
-  beforeEach(async function () {
-    accounts = await ethers.getSigners();
-    owner = accounts[0];
-
-    const stakeTokenFact = await ethers.getContractFactory("ERC20Mock");
-    stakeToken = await stakeTokenFact.deploy(owner.address, stakeTokenstotal);
-    await stakeToken.deployed();
-
-    const stakingFact = await ethers.getContractFactory("Staking");
-    staking = await stakingFact.deploy(stakeToken.address);
-    await staking.deployed();
-
-    const nft1Fact = await ethers.getContractFactory("NFTFrist");
-    nft1 = await nft1Fact.deploy(staking.address);
-
-    await nft1.deployed();
-  });
-
-  it("Minting the first NFT uses the right URL", async function () {
-    await staking.mint();
-    const url1 = await nft1.tokenURI(1);
-    expect(url1).to.equal(baseUrl + "a");
-  });
-
-  it("Minting multiple NFTs rotates the URLs", async function () {
-    await staking.mint();
-    await staking.mint();
-    await staking.mint();
-    const url1 = await nft1.tokenURI(1);
-    const url2 = await nft1.tokenURI(2);
-    const url3 = await nft1.tokenURI(3);
-    expect(url1).to.equal(baseUrl + "a");
-    expect(url2).to.equal(baseUrl + "b");
-    expect(url3).to.equal(baseUrl + "a");
-  });
-}); */
-
 describe("Milestone eligibility", function () {
   let accounts: SignerWithAddress[];
   let staking: Contract;

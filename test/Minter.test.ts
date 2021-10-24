@@ -14,12 +14,17 @@ describe("Minter", function () {
   let owner: SignerWithAddress;
   let staker1: SignerWithAddress;
   let staker2: SignerWithAddress;
+  let staker3: SignerWithAddress;
+  let baseUriFirst: string;
+  let baseUriSecond: string;
+  let baseUriThird: string;
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
     owner = accounts[0];
     staker1 = accounts[1];
     staker2 = accounts[2];
+    staker3 = accounts[3];
 
     const minterFact = await ethers.getContractFactory("Minter");
     minter = await minterFact.deploy(owner.address);
@@ -42,6 +47,10 @@ describe("Minter", function () {
       nftSecond.address,
       nftThird.address
     );
+
+    baseUriFirst = nftFirst.baseURI();
+    baseUriSecond = nftSecond.baseURI();
+    baseUriThird = nftThird.baseURI();
   });
 
   const expectInitial = async () => {
@@ -221,5 +230,30 @@ describe("Minter", function () {
     await expect(nftThird.ownerOf(3)).to.be.revertedWith(
       "ERC721: owner query for nonexistent token"
     );
+  });
+
+  it("Minting the first NFT uses the right URL", async function () {
+    await minter.whitelist(1, staker1.address);
+    await minter.connect(staker1).claimNFTs();
+
+    expect(await nftFirst.tokenURI(1)).to.equal("http://first/a");
+  });
+
+  it("Minting multiple NFTs rotates the URLs", async function () {
+    await minter.whitelist(1, staker1.address);
+    await minter.connect(staker1).claimNFTs();
+
+    await minter.whitelist(1, staker2.address);
+    await minter.connect(staker2).claimNFTs();
+
+    await minter.whitelist(1, staker3.address);
+    await minter.connect(staker3).claimNFTs();
+
+    const url1 = await nftFirst.tokenURI(1);
+    const url2 = await nftFirst.tokenURI(2);
+    const url3 = await nftFirst.tokenURI(3);
+    expect(url1).to.equal("http://first/" + "a");
+    expect(url2).to.equal("http://first/" + "b");
+    expect(url3).to.equal("http://first/" + "a");
   });
 });

@@ -6,7 +6,9 @@ contract NFTFirst is MyNFT {
     constructor(address minterContract)
         public
         MyNFT(minterContract, "first", "first")
-    {}
+    {
+        _setBaseURI("http://first/");
+    }
 
     function setHashes() internal {
         _hashes.push("a");

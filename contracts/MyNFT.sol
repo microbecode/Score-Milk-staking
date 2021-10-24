@@ -17,7 +17,6 @@ contract MyNFT is ERC721Metadata {
         string memory symbol
     ) public ERC721Metadata(name, symbol) {
         _minterContract = minterContract;
-        _setBaseURI("http://blah/");
 
         setHashes();
     }
