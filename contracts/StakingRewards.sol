@@ -103,13 +103,13 @@ contract StakingRewards is
 
     /** @dev Checks whether an account is eligible for some staking milestone
      * @param staker Address of the staker to check
-     * @param amount The minimum amount of tokens the user needs to have staked, for the milestone
+     * @param amount The minimum amount of tokens the user needs to have staked, for the milestone. This is of type int256 (not uint256) so it would be better compatible with the stored int256 data
      * @param duration The minimum duration for the staker to have staked the amount of tokens, for the milestone
      * @return true if eligible, false otherwise
      */
     function checkMilestoneEligibility(
         address staker,
-        uint256 amount,
+        int256 amount,
         uint256 duration
     ) public view returns (bool) {
         int256 currentStake = 0;
@@ -127,7 +127,7 @@ contract StakingRewards is
 
             currentStake += stakingActions[staker][i].amount;
 
-            if (currentStake >= int256(amount)) {
+            if (currentStake >= amount) {
                 // If we're above the threshold
                 if (milestoneAmountHeldFrom == 0) {
                     // If timestamp not set yet
@@ -135,6 +135,7 @@ contract StakingRewards is
                         .timestamp;
                 }
             } else {
+                // Reset (in case we just went below the threshold)
                 milestoneAmountHeldFrom = 0;
             }
         }
@@ -150,7 +151,7 @@ contract StakingRewards is
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /** @dev Add a stake or increases an existing stake
+    /** @dev Add a stake or increase an existing stake
      * @param amount How many tokens to stake
      */
     function stake(uint256 amount)

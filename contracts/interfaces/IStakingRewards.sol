@@ -20,7 +20,7 @@ interface IStakingRewards {
 
     function checkMilestoneEligibility(
         address staker,
-        uint256 amount,
+        int256 amount,
         uint256 duration
     ) external view returns (bool);
 
