@@ -20,9 +20,7 @@ This repository is implemented with Solidity on top of an Ethereum framework. Th
 
 ## Smart contracts
 
-The staking contract is based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract has been kept as close to the original as possible.
-
-The contracts are documented in more detail <a href='./contracts/README.md'>in the contracts folder</a>.
+The contracts are documented in detail <a href='./contracts/README.md'>in the contracts folder</a>.
 
 ## Deployment
 
@@ -38,4 +36,9 @@ There is an example deployment script in *scripts/deploy.js*. If you have Hardha
 ## Verifying the contracts
 
 If the contracts need to be verified in some external service it's easiest to first create a flattened file of all of the contracts. This can be done with Hardhat: *npx hardhat flatten > flat.sol.txt* (not using the direct .sol suffix because it would cause conflicting contract names).
+
+## Unit tests
+
+All of the written contracts are covered with automated unit tests.
+You can browse the tests in the *test* folder, and you can run them with Hardhat: *npx hardhat test*
 

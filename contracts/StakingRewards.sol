@@ -152,7 +152,7 @@ contract StakingRewards is
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /** @dev Add a stake or increases an existing stake
-     * @param aomunt How many tokens to stake
+     * @param amount How many tokens to stake
      */
     function stake(uint256 amount)
         external
