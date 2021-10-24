@@ -347,10 +347,6 @@ describe("Staking", function () {
     initialBalanceStaker2 = await ethers.provider.getBalance(staker2.address);
   });
 
-  it("initial data is correct", async function () {
-    await expectInitial();
-  });
-
   const expectInitial = async () => {
     const balanceOwner = await ethers.provider.getBalance(owner.address);
     const balanceStaker1 = await ethers.provider.getBalance(staker1.address);
@@ -370,6 +366,24 @@ describe("Staking", function () {
     expect(updateTime).to.equal(zero);
     expect(periodFinish).to.equal(zero);
   };
+
+  it("initial data is correct", async function () {
+    await expectInitial();
+  });
+
+  it("No access", async function () {
+    await expect(
+      staking.connect(staker1).setRewardsDuration(oneToken)
+    ).to.be.revertedWith("Only the contract owner may perform this action");
+
+    await expect(
+      staking.connect(staker1).recoverERC20(staker2.address, oneToken)
+    ).to.be.revertedWith("Only the contract owner may perform this action");
+
+    await expect(
+      staking.connect(owner).notifyRewardAmount({ value: oneToken })
+    ).to.be.revertedWith("Caller is not RewardsDistribution contract");
+  });
 
   it("Unstaking without stake reverts", async function () {
     await expect(staking.withdraw(zero)).to.be.revertedWith(
@@ -462,6 +476,54 @@ describe("Staking", function () {
     const earnedSecond = await staking.earned(staker1.address);
 
     expect(earnedFirst).to.eq(earnedSecond);
+    expect(earnedFirst).to.be.gt(0);
+  });
+
+  it("Single staking, different staking period, retains the rewards", async function () {
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, twoTokens, { gasPrice: 0 });
+    await staking.connect(staker1).stake(oneToken, { gasPrice: 0 });
+
+    await staking.setRewardsDuration(rewardsDuration * 2);
+
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await increaseTime(rewardsDuration * 3);
+    const earnedFirst = await staking.earned(staker1.address);
+    await increaseTime(rewardsDuration);
+    const earnedSecond = await staking.earned(staker1.address);
+
+    expect(earnedFirst).to.eq(earnedSecond);
+    expect(earnedFirst).to.be.gt(0);
+  });
+
+  it("Single staking, different staking period, influences rewards", async function () {
+    await stakeToken
+      .connect(staker1)
+      .approve(staking.address, twoTokens, { gasPrice: 0 });
+    await staking.connect(staker1).stake(oneToken, { gasPrice: 0 });
+
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await increaseTime(rewardsDuration * 2);
+    const earnedFirst = await staking.earned(staker1.address);
+
+    await staking.setRewardsDuration(rewardsDuration * 2);
+    await staking
+      .connect(rewardDistributer)
+      .notifyRewardAmount({ value: twoTokens });
+
+    await increaseTime(rewardsDuration);
+    const earnedSecond = await staking.earned(staker1.address);
+
+    // Earnings during second period should be half of what they are in the first period,
+    // since we only stake until halfway of the second period
+    expect(earnedFirst).to.eq(earnedSecond.sub(earnedFirst).mul(2));
     expect(earnedFirst).to.be.gt(0);
   });
 
