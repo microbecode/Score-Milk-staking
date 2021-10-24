@@ -23,6 +23,8 @@ contract Minter is Owned {
 
     constructor(address _owner) public Owned(_owner) {}
 
+    /** @dev Sets the addresses of the three NFT contracts. Can be called only once
+     */
     function setNFTAddresses(
         address nftFirst,
         address nftSecond,
@@ -36,6 +38,10 @@ contract Minter is Owned {
         nftAddressesSet = true;
     }
 
+    /** @dev Whitelists an address for certain tier of NFT
+     * @param tier For which tier the user should be whitelisted. 1, 2 or 3.
+     * @param addr Which address should be whitelisted
+     */
     function whitelist(uint8 tier, address addr) public onlyOwner {
         if (tier == 1) {
             tier1Whitelist[addr] = true;
@@ -48,6 +54,8 @@ contract Minter is Owned {
         }
     }
 
+    /** @dev Claims an NFT. Works only if you are whitelisted for some NFT tier
+     */
     function claimNFTs() public {
         if (tier1Whitelist[msg.sender] && !tier1NFTReceived[msg.sender]) {
             _nftFirst.mint(msg.sender);
@@ -66,6 +74,8 @@ contract Minter is Owned {
         }
     }
 
+    /** @dev Checks whether the caller is whitelisted for some NFT tier
+     */
     function amIEligible() public view returns (bool) {
         if (tier1Whitelist[msg.sender] && !tier1NFTReceived[msg.sender]) {
             return true;

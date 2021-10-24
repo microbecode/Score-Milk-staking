@@ -65,10 +65,15 @@ contract StakingRewards is
         return _balances[account];
     }
 
+    /** @dev Returns the last moment the rewards can be calculated for
+     * @return Current timestamp or the staking period's end timestamp - whichever is earlier
+     */
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
+    /** @dev How much rewards should a single token give
+     */
     function rewardPerToken() public view returns (uint256) {
         if (_totalSupply == 0) {
             return rewardPerTokenStored;
@@ -83,7 +88,8 @@ contract StakingRewards is
             );
     }
 
-    // How much an account has earned so far
+    /** @dev How much rewards has an account accumulated so far
+     */
     function earned(address account) public view returns (uint256) {
         return
             _balances[account]
@@ -96,6 +102,12 @@ contract StakingRewards is
         return rewardRate.mul(rewardsDuration);
     }
 
+    /** @dev Checks whether an account is eligible for some staking milestone
+     * @param staker Address of the staker to check
+     * @param amount The minimum amount of tokens the user needs to have staked, for the milestone
+     * @param duration The minimum duration for the staker to have staked the amount of tokens, for the milestone
+     * @return true if eligible, false otherwise
+     */
     function checkMilestoneEligibility(
         address staker,
         uint256 amount,
@@ -139,6 +151,9 @@ contract StakingRewards is
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    /** @dev Add a stake or increases an existing stake
+     * @param aomunt How many tokens to stake
+     */
     function stake(uint256 amount)
         external
         nonReentrant
@@ -153,6 +168,9 @@ contract StakingRewards is
         emit Staked(msg.sender, amount);
     }
 
+    /** @dev Unstake some amount of tokens
+     * @param amount The amount of tokens to unstake
+     */
     function withdraw(uint256 amount)
         public
         nonReentrant
@@ -166,6 +184,8 @@ contract StakingRewards is
         emit Withdrawn(msg.sender, amount);
     }
 
+    /** @dev Withdraws all of the currently accumulated rewards. Does not unstake
+     */
     function getReward() public nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
@@ -176,6 +196,8 @@ contract StakingRewards is
         }
     }
 
+    /** @dev Unstakes everything and withdraws all rewards
+     */
     function exit() external {
         withdraw(_balances[msg.sender]);
         getReward();
@@ -189,6 +211,8 @@ contract StakingRewards is
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
+    /** @dev Add rewards to the contract. The rewards are in the format of the blockchain's native assets (msg.value)
+     */
     function notifyRewardAmount()
         external
         payable
@@ -219,7 +243,8 @@ contract StakingRewards is
         emit RewardAdded(msg.value);
     }
 
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
+    /** @dev Recover an arbitrary ERC20 token from the contract. Useful if wrong tokens were sent here accidentally
+     */
     function recoverERC20(address tokenAddress, uint256 tokenAmount)
         external
         onlyOwner
@@ -232,6 +257,8 @@ contract StakingRewards is
         emit Recovered(tokenAddress, tokenAmount);
     }
 
+    /** @dev Changes the reward duration. Only possible when a staking period is not running
+     */
     function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
         require(
             block.timestamp > periodFinish,
@@ -243,6 +270,8 @@ contract StakingRewards is
 
     /* ========== MODIFIERS ========== */
 
+    /** @dev Updates reward information for a user
+     */
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
