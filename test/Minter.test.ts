@@ -160,6 +160,15 @@ describe("Minter", function () {
     expect(await nftThird.ownerOf(1)).to.equal(staker1.address);
   });
 
+  /*    it("Random", async function () {
+    await minter.whitelist(1, staker1.address);
+    await minter.whitelist(1, staker2.address);
+    await minter.whitelist(1, staker3.address);
+    await minter.connect(staker1).claimNFTs();
+    await minter.connect(staker2).claimNFTs();
+    await minter.connect(staker3).claimNFTs();
+  });  */
+
   it("Saved as received", async function () {
     await minter.whitelist(1, staker1.address);
     await minter.whitelist(2, staker1.address);
@@ -232,7 +241,7 @@ describe("Minter", function () {
     );
   });
 
-  it("Minting the first NFT uses the right URL", async function () {
+  /* it("Minting the first NFT uses the right URL", async function () {
     await minter.whitelist(1, staker1.address);
     await minter.connect(staker1).claimNFTs();
 
@@ -255,5 +264,5 @@ describe("Minter", function () {
     expect(url1).to.equal("http://first/" + "a");
     expect(url2).to.equal("http://first/" + "b");
     expect(url3).to.equal("http://first/" + "a");
-  });
+  }); */
 });

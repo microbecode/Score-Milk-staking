@@ -10,6 +10,7 @@ contract MyNFT is ERC721Metadata {
     address internal _minterContract;
 
     string[] internal _hashes;
+    uint256 internal _randomizerNonce;
 
     constructor(
         address minterContract,
@@ -29,11 +30,23 @@ contract MyNFT is ERC721Metadata {
             "Only minting contract can mint"
         );
 
+        uint256 index = uint256(
+            keccak256(
+                abi.encodePacked(
+                    _randomizerNonce,
+                    msg.sender,
+                    block.difficulty,
+                    block.timestamp
+                )
+            )
+        ) % _hashes.length;
+        _randomizerNonce++;
+
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();
         _mint(receiver, newItemId);
-        string memory usedHash = _hashes[((newItemId - 1) % _hashes.length)];
+        string memory usedHash = _hashes[index];
         _setTokenURI(newItemId, usedHash);
     }
 }
