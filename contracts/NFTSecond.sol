@@ -7,11 +7,14 @@ contract NFTSecond is MyNFT {
         public
         MyNFT(minterContract, "second", "second")
     {
-        _setBaseURI("http://second/");
+        _setBaseURI(
+            "https://gateway.pinata.cloud/ipfs/QmVEWNACYMp9DKMZWvYBXdQWVt9UjgFFtiLuyj1ibFgy5R/"
+        );
     }
 
     function setHashes() internal {
-        _hashes.push("c");
-        _hashes.push("d");
+        _hashes.push("5.json");
+        _hashes.push("6.json");
+        _hashes.push("7.json");
     }
 }

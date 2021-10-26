@@ -7,11 +7,15 @@ contract NFTThird is MyNFT {
         public
         MyNFT(minterContract, "third", "third")
     {
-        _setBaseURI("http://third/");
+        _setBaseURI(
+            "https://gateway.pinata.cloud/ipfs/QmVEWNACYMp9DKMZWvYBXdQWVt9UjgFFtiLuyj1ibFgy5R/"
+        );
     }
 
     function setHashes() internal {
-        _hashes.push("e");
-        _hashes.push("f");
+        _hashes.push("8.json");
+        _hashes.push("9.json");
+        _hashes.push("10.json");
+        _hashes.push("11.json");
     }
 }
