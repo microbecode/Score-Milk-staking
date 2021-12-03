@@ -1,17 +1,16 @@
 pragma solidity ^0.5.0;
 
-import "./token/ERC20/SafeERC20.sol";
-import "./utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Inheritance
 import "./interfaces/IStakingRewards.sol";
 import "./RewardsDistributionRecipient.sol";
 import "./Pausable.sol";
 
-import "./token/ERC20/IERC20.sol";
-import "./math/SafeMath.sol";
-
-// https://docs.synthetix.io/contracts/source/contracts/stakingrewards
+// https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol
 contract StakingRewards is
     IStakingRewards,
     RewardsDistributionRecipient,

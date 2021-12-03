@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "./token/ERC721/ERC721Metadata.sol";
-import "./drafts/Counters.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Metadata.sol";
+import "@openzeppelin/contracts/drafts/Counters.sol";
 
 contract MyNFT is ERC721Metadata {
     using Counters for Counters.Counter;
